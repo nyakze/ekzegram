@@ -430,8 +430,7 @@ jobs:
           move %OUT%\ekzegram.exe artifact/
           if exist %OUT%\Updater.exe move %OUT%\Updater.exe artifact/
 
-      # FORK: SignPath code signing removed — the fork ships unsigned builds,
-      # see CODE_SIGNING.md.
+      # FORK: SignPath code signing removed — the fork ships unsigned builds.
       - uses: actions/upload-artifact@v7
         name: Upload artifact.
         if: (env.UPLOAD_ARTIFACT == 'true') || (github.ref == 'refs/heads/nightly')
