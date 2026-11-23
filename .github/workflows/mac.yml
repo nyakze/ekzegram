@@ -1,6 +1,7 @@
 name: MacOS.
 
 on:
+  workflow_dispatch:
   push:
     # Pushes to the canary or private-ci branches run their own workflows.
     branches-ignore:
@@ -43,20 +44,31 @@ on:
       - 'Telegram/SourceFiles/platform/linux/**'
       - 'Telegram/configure.bat'
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
 
-  macos:
-    name: MacOS
-    runs-on: ${{ (github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/nightly') && 'depot-macos-latest' || 'macos-latest' }}
+  build:
+    name: MacOS ${{ matrix.arch }}
+    # FORK: depot-* runners belong to upstream's infra and are not available
+    # here; a PR/tag/nightly run would queue forever. Use the hosted runner.
+    runs-on: macos-latest
 
     strategy:
+      fail-fast: false
       matrix:
+        arch: [arm64, x86_64]
         defines:
           - ""
     env:
-      UPLOAD_ARTIFACT: "true"
       ONLY_CACHE: "false"
       PREPARE_PATH: "Telegram/build/prepare/prepare.py"
+      # FORK: the prepared Libraries tree depends on these arguments, so they
+      # are part of the cache key; otherwise an exact hit restores a tree built
+      # with different arguments and the rebuild never gets saved.
+      PREPARE_ARGS: "silent"
 
     steps:
       - name: Get repository name.
@@ -85,57 +97,100 @@ jobs:
 
       - name: Libraries cache.
         id: cache-libs
-        uses: actions/cache@v6
+        uses: actions/cache/restore@v6
         with:
           path: |
             Libraries
             ThirdParty
-          key: ${{ runner.OS }}-libs-${{ hashFiles(format('{0}/{1}', env.REPO_NAME, env.PREPARE_PATH)) }}
-          restore-keys: ${{ runner.OS }}-libs-
+          # FORK: a unique primary key with a newest-first prefix restore.
+          # A static exact key could never be re-saved after prepare had to
+          # rebuild (a toolchain update on the runner image invalidates every
+          # stage key inside prepare.py), so every run kept paying the full
+          # dependency rebuild forever. prepare.py validates the restored
+          # tree stage by stage anyway, so restoring the newest one is safe.
+          key: ${{ runner.OS }}-libs-${{ env.PREPARE_ARGS }}-${{ hashFiles(format('{0}/{1}', env.REPO_NAME, env.PREPARE_PATH)) }}-${{ github.run_id }}
+          restore-keys: ${{ runner.OS }}-libs-${{ env.PREPARE_ARGS }}-
 
       - name: Libraries.
         run: |
-          ./$REPO_NAME/Telegram/build/prepare/mac.sh skip-release silent
-
-      - name: Free up some disk space.
-        run: find Libraries '(' '(' ! '(' -name '*.a' -o -name '*.h' -o -name '*.hpp' -o -name '*.inc' -o -name '*.cmake' -o -name '*.pc' -o -path '*/include/*' -o -path '*/objects-*' -o -path '*/cache_keys/*' -o -path '*/patches/*' -o -perm +111 ')' -type f ')' -o -empty ')' -delete
-
-      - name: Telegram Desktop build.
-        if: env.ONLY_CACHE == 'false'
-        run: |
-          cd $REPO_NAME/Telegram
-
-          DEFINE=""
-          if [ -n "${{ matrix.defines }}" ]; then
-            DEFINE="-D ${{ matrix.defines }}=ON"
-            echo Define from matrix: $DEFINE
-            echo "ARTIFACT_NAME=Telegram ${{ matrix.defines }}" >> $GITHUB_ENV
+          touch "$RUNNER_TEMP/prepare-stamp"
+          ./$REPO_NAME/Telegram/build/prepare/mac.sh $PREPARE_ARGS
+          # FORK: a rebuilt stage rewrites its cache_keys marker, a no-op run
+          # touches nothing (restored mtimes predate the stamp). Save only a
+          # rebuilt tree below.
+          if find Libraries/cache_keys ThirdParty/cache_keys -newer "$RUNNER_TEMP/prepare-stamp" | grep -q .; then
+            echo "PREPARE_REBUILT=true" >> $GITHUB_ENV
           else
-            echo "ARTIFACT_NAME=Telegram" >> $GITHUB_ENV
+            echo "PREPARE_REBUILT=false" >> $GITHUB_ENV
           fi
 
-          ./configure.sh \
-          -D CMAKE_CONFIGURATION_TYPES=Debug \
-          -D CMAKE_COMPILE_WARNING_AS_ERROR=ON \
-          -D CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
-          -D TDESKTOP_API_TEST=ON \
-          -D DESKTOP_APP_DISABLE_AUTOUPDATE=OFF \
-          -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF \
-          $DEFINE
+      - name: Free up some disk space.
+        # FORK: */out/src/* and */local/src/* are kept — they hold generated
+        # sources required by the build (wallet_engine.cpp; the macOS script
+        # installs under Libraries/local, the Windows one under tdesktop_rust/out).
+        run: find Libraries '(' '(' ! '(' -name '*.a' -o -name '*.h' -o -name '*.hpp' -o -name '*.inc' -o -name '*.cmake' -o -name '*.pc' -o -path '*/include/*' -o -path '*/out/src/*' -o -path '*/local/src/*' -o -path '*/objects-*' -o -path '*/cache_keys/*' -o -path '*/patches/*' -o -perm +111 ')' -type f ')' -o -empty ')' -delete
 
-          cmake --build ../out --config Debug --parallel
+      # FORK: save the trimmed Libraries right here — the post step of
+      # actions/cache skips saving when a later step fails, which threw away
+      # the ~2h dependency build of every failed run.
+      - name: Save Libraries cache.
+        if: env.PREPARE_REBUILT == 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            Libraries
+            ThirdParty
+          key: ${{ steps.cache-libs.outputs.cache-primary-key }}
 
-      - name: Move artifact.
-        if: env.UPLOAD_ARTIFACT == 'true'
+      - name: Prune older Libraries caches.
+        # FORK: the run-scoped Libraries keys accumulate one ~2.8 GB entry per
+        # rebuild and would evict everything else from the 10 GB repository
+        # cache budget. Keep only the entry this run produced.
+        if: ${{ !cancelled() && env.PREPARE_REBUILT == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd $REPO_NAME/out/Debug
-          mkdir artifact
-          mv Telegram.app artifact/
-          mv Updater artifact/
+          CURRENT="${{ steps.cache-libs.outputs.cache-primary-key }}"
+          gh cache list -R "$GITHUB_REPOSITORY" --key "macOS-libs-" --json key --jq '.[].key' | while read -r key; do
+            [ "$key" = "$CURRENT" ] || gh cache delete "$key" -R "$GITHUB_REPOSITORY" || true
+          done
+
+      - name: Telegram Desktop build.
+        run: |
+          cd $REPO_NAME
+
+          # FORK: the Swift translation module cannot be built as a fat binary
+          # in a single pass, so each architecture is configured and built on
+          # its own (the recipe of Telegram/build/build_mac.py) and shipped as
+          # a separate package.
+          # FORK: no compiler cache on macOS — the per-architecture object
+          # sets do not fit the 10 GB repository cache budget together with
+          # the dependency trees, and a partially filled cache brings no hits
+          # on these full rebuilds. The budget goes to the Windows and Linux
+          # compiler caches, which save more per gigabyte.
+          python3 Telegram/configure.py -GNinja -B "$PWD/out-${{ matrix.arch }}" \
+          -D CMAKE_BUILD_TYPE=Release \
+          -D CMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
+          -D DESKTOP_APP_MAC_ARCH=${{ matrix.arch }} \
+          -D DESKTOP_APP_ENABLE_LTO=ON \
+          -D CMAKE_COMPILE_WARNING_AS_ERROR=ON \
+          -D TDESKTOP_API_ID=${{ secrets.TDESKTOP_API_ID }} \
+          -D TDESKTOP_API_HASH=${{ secrets.TDESKTOP_API_HASH }} \
+          -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON \
+          -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF \
+          ${{ matrix.defines && format('-D {0}=ON', matrix.defines) || '' }}
+
+          cmake --build "$PWD/out-${{ matrix.arch }}" --target Telegram --parallel
+
+      - name: Strip symbols.
+        run: |
+          find "$REPO_NAME/out-${{ matrix.arch }}/ekzegram.app" -type f | while read -r f; do
+            strip -x "$f" 2>/dev/null || true
+          done
+
       - uses: actions/upload-artifact@v7
-        if: env.UPLOAD_ARTIFACT == 'true'
         name: Upload artifact.
         with:
-          name: ${{ env.ARTIFACT_NAME }}
-          path: ${{ env.REPO_NAME }}/out/Debug/artifact/
-          retention-days: 1
+          name: ekzegram-macos-${{ matrix.arch }}
+          path: ${{ env.REPO_NAME }}/out-${{ matrix.arch }}/ekzegram.app
+          retention-days: 30

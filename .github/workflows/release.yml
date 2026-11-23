@@ -1,0 +1,167 @@
+name: Make release.
+
+# Packages the CI artifacts of a given commit into a GitHub release.
+# Artifacts never leave GitHub — no local downloading needed.
+# Usage: Actions -> Make release -> Run workflow (fill in source_sha and tag).
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: 'Commit SHA whose successful builds to package (e.g. 61a297df2a)'
+        required: true
+      tag:
+        description: 'Release tag following upstream versioning (e.g. v7.4.3)'
+        required: true
+      upstream_version:
+        description: 'Upstream Telegram Desktop version this release is based on'
+        required: false
+        default: '7.4.3'
+      prerelease:
+        description: 'Mark as pre-release (true/false)'
+        required: false
+        default: 'true'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifacts.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SHA="${{ inputs.source_sha }}"
+          mkdir -p work
+          for name in Linux. Windows. MacOS.; do
+            RUN=$(gh run list --repo "$GITHUB_REPOSITORY" --limit 100 --json databaseId,name,headSha,conclusion \
+              --jq "[.[] | select(.name==\"$name\" and (.headSha|startswith(\"$SHA\")) and .conclusion==\"success\") | .databaseId][0] // \"\"")
+            if [ -z "$RUN" ] || [ "$RUN" = "null" ]; then
+              echo "ERROR: no successful '$name' run found for commit $SHA"
+              exit 1
+            fi
+            echo "Downloading '$name' artifacts from run $RUN..."
+            ARTIFACTS=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN/artifacts" \
+              --jq '[.artifacts[] | select(.name | startswith("ekzegram")) | .name] | .[]')
+            if [ -z "$ARTIFACTS" ]; then
+              echo "ERROR: no ekzegram artifacts in run $RUN"
+              exit 1
+            fi
+            while IFS= read -r aname; do
+              [ -z "$aname" ] && continue
+              echo "  artifact: $aname"
+              gh run download "$RUN" --repo "$GITHUB_REPOSITORY" -n "$aname" -D "work/$name/$aname"
+            done <<< "$ARTIFACTS"
+          done
+          find work -maxdepth 3 | head -40
+
+      - name: Package artifacts.
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          LINUX_BIN=$(find work/Linux. -type f -name 'ekzegram' | head -1)
+          WIN_BIN=$(find work/Windows. -type f -name 'ekzegram.exe' | head -1)
+          test -n "$LINUX_BIN" && test -n "$WIN_BIN"
+
+          tar -czf dist/ekzegram-linux.tar.gz -C "$(dirname "$LINUX_BIN")" ekzegram
+          (cd "$(dirname "$WIN_BIN")" && zip -q "$OLDPWD/dist/ekzegram-windows.zip" ekzegram.exe)
+
+          for ARCH in arm64 x86_64; do
+            # The uploaded artifact holds the bundle contents without the
+            # .app wrapper, so stage the folder around them.
+            SRC="work/MacOS./ekzegram-macos-$ARCH"
+            test -f "$SRC/Contents/MacOS/ekzegram"
+            STAGE="work/macos-$ARCH"
+            mkdir -p "$STAGE"
+            mv "$SRC" "$STAGE/ekzegram.app"
+            (cd "$STAGE" && zip -qr "$OLDPWD/dist/ekzegram-macos-$ARCH.zip" ekzegram.app)
+          done
+
+          (cd dist && sha256sum ekzegram-* > SHA256SUMS.txt)
+          ls -lh dist
+
+      - name: Gather build facts for notes.
+        id: facts
+        run: |
+          set -euo pipefail
+          for ARCH in arm64 x86_64; do
+            BIN="work/macos-$ARCH/ekzegram.app/Contents/MacOS/ekzegram"
+            test -f "$BIN"
+            file -b "$BIN" | grep -q "$ARCH" || { echo "ERROR: $ARCH package has a wrong binary"; exit 1; }
+            echo "$ARCH package verified"
+          done
+          echo "mac_arch=separate arm64 and x86_64 packages" >> "$GITHUB_OUTPUT"
+
+      - name: Create release tag at the built commit.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Note: the tag is created explicitly at the built commit instead of
+          # using 'gh release create --target'. Passing --target makes GitHub
+          # resolve the commit range for the release, and if that range touches
+          # workflow files it demands a 'workflows: write' permission which the
+          # GITHUB_TOKEN cannot be granted via workflow permissions.
+          if gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" \
+              -f ref="refs/tags/${{ inputs.tag }}" -f sha="${{ inputs.source_sha }}"; then
+            echo "Tag ${{ inputs.tag }} created at ${{ inputs.source_sha }}"
+          else
+            echo "Tag ${{ inputs.tag }} already exists — continuing"
+          fi
+
+      - name: Create release.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag }}"
+          VERSION="${TAG#v}"
+          cat > notes.md <<EOF
+          ## ekzegram $VERSION
+
+          Unofficial fork of Telegram Desktop with JavaScript execution disabled in
+          message widgets (widgets render as a static "unsupported message" card).
+          Based on Telegram Desktop ${{ inputs.upstream_version }}.
+
+          ### Build configuration
+
+          | Archive | Build | Notes |
+          |---|---|---|
+          | \`ekzegram-linux.tar.gz\` | Release | |
+          | \`ekzegram-windows.zip\` | Release | |
+          | \`ekzegram-macos-arm64.zip\` | Release | Apple Silicon |
+          | \`ekzegram-macos-x86_64.zip\` | Release | Intel (also runs on Apple Silicon via Rosetta) |
+
+          macOS binary: ${{ steps.facts.outputs.mac_arch }}
+
+          ### Warnings
+
+          * Binaries are **not code-signed**: Windows SmartScreen and macOS
+            Gatekeeper will warn.
+          * Auto-update is disabled: this build will never replace itself with the
+            official Telegram Desktop.
+
+          ### Verify
+
+          SHA256 checksums are in the \`SHA256SUMS.txt\` asset.
+
+          ---
+
+          Неофициальный форк Telegram Desktop: виджеты в сообщениях не исполняют
+          JavaScript. Linux, Windows и macOS — Release-сборки. Бинарники не
+          подписаны. Подробности: README.md.
+          EOF
+          if [ "${{ inputs.prerelease }}" = "true" ]; then
+            PRE="--prerelease"
+          else
+            PRE=""
+          fi
+          gh release create "$TAG" dist/ekzegram-linux.tar.gz dist/ekzegram-windows.zip dist/ekzegram-macos-arm64.zip dist/ekzegram-macos-x86_64.zip dist/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "ekzegram $VERSION" \
+            --notes-file notes.md \
+            $PRE

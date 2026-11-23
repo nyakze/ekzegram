@@ -1,6 +1,7 @@
 name: Linux.
 
 on:
+  workflow_dispatch:
   push:
     # Pushes to the canary or private-ci branches run their own workflows.
     branches-ignore:
@@ -47,11 +48,17 @@ on:
       - 'Telegram/configure.bat'
       - 'Telegram/Telegram.plist'
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
 
   linux:
     name: Rocky Linux 8
-    runs-on: ${{ (github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/nightly') && 'depot-ubuntu-latest-16' || 'ubuntu-latest' }}
+    # FORK: depot-* runners belong to upstream's infra and are not available
+    # here; a PR/tag/nightly run would queue forever. Use the hosted runner.
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
@@ -93,7 +100,7 @@ jobs:
 
       - name: Libraries cache.
         id: cache-libs
-        uses: actions/cache@v6
+        uses: actions/cache/restore@v6
         with:
           path: |
             ${{ runner.temp }}/.buildx-cache
@@ -123,6 +130,23 @@ jobs:
           rm -rf ${{ runner.temp }}/.buildx-cache
           mv ${{ runner.temp }}/.buildx-cache{-new,}
 
+      # FORK: save right here instead of relying on the post step of
+      # actions/cache, which skips saving when a later step fails. Without
+      # this, every failed run re-builds the ~2h dependency image from zero.
+      - name: Save Libraries cache.
+        if: success() && steps.cache-libs.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            ${{ runner.temp }}/.buildx-cache
+            ${{ runner.temp }}/.mount-cache
+          key: ${{ steps.cache-libs.outputs.cache-primary-key }}
+
+      # FORK: the Linux compiler cache is persisted after all — without it the
+      # LTO build takes ~1.5 hours instead of ~10 minutes. It is capped small
+      # to fit the 10 GB repository cache budget together with the dependency
+      # trees and the Windows compiler cache; superseded entries are pruned
+      # after saving so they never evict the dependency trees.
       - name: Restore Telegram Desktop cache.
         id: cache-tdesktop
         if: env.ONLY_CACHE == 'false'
@@ -139,60 +163,56 @@ jobs:
           if [ -n "${{ matrix.defines }}" ]; then
             DEFINE="-D ${{ matrix.defines }}=ON"
             echo Define from matrix: $DEFINE
-            echo "ARTIFACT_NAME=Telegram ${{ matrix.defines }}" >> $GITHUB_ENV
+            echo "ARTIFACT_NAME=ekzegram ${{ matrix.defines }}" >> $GITHUB_ENV
           else
-            echo "ARTIFACT_NAME=Telegram" >> $GITHUB_ENV
+            echo "ARTIFACT_NAME=ekzegram" >> $GITHUB_ENV
           fi
 
           ccache -z
 
+          # FORK: CMAKE_COMPILE_WARNING_AS_ERROR is dropped — Release builds
+          # trigger a false-positive -Waggressive-loop-optimizations in GCC 15
+          # via range-v3/std::advance (upstream CI builds Debug at -O0 only).
           docker run --rm \
           -u $(id -u) \
           -v $PWD:/usr/src/tdesktop \
           -v ${{ env.CCACHE_DIR }}:/var/cache/ccache \
-          -e CONFIG=Debug \
+          -e CONFIG=Release \
           -e CCACHE_SLOPPINESS=pch_defines,time_macros \
+          -e CCACHE_MAXSIZE=1G \
           $IMAGE_TAG \
           env -u CCACHE_DISABLE /usr/src/tdesktop/Telegram/build/docker/centos_env/build.sh \
-          -D CMAKE_CONFIGURATION_TYPES=Debug \
+          -D CMAKE_CONFIGURATION_TYPES=Release \
           -D CMAKE_C_FLAGS_DEBUG="-O0 -fpch-preprocess" \
           -D CMAKE_CXX_FLAGS_DEBUG="-O0 -fpch-preprocess" \
-          -D CMAKE_COMPILE_WARNING_AS_ERROR=ON \
-          -D TDESKTOP_API_TEST=ON \
-          -D DESKTOP_APP_DISABLE_AUTOUPDATE=OFF \
+          -D DESKTOP_APP_ENABLE_LTO=ON \
+          -D TDESKTOP_API_ID=${{ secrets.TDESKTOP_API_ID }} \
+          -D TDESKTOP_API_HASH=${{ secrets.TDESKTOP_API_HASH }} \
+          -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON \
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF \
           $DEFINE
 
-      - name: Count ccache misses.
-        id: ccache-stats
-        if: env.ONLY_CACHE == 'false'
-        run: |
-          MISSES=$(ccache --print-stats | sed -n 's/^cache_miss\t//p' | head -1)
-          case "$MISSES" in (*[!0-9]*|'') MISSES=0;; esac
-          echo "misses=$MISSES" >> $GITHUB_OUTPUT
-          echo "ccache misses this run: $MISSES"
-
-      - name: Trim Telegram Desktop cache.
-        if: >
-          env.ONLY_CACHE == 'false'
-            && github.ref_name == github.event.repository.default_branch
-            && fromJSON(steps.ccache-stats.outputs.misses) > 300
-        run: ccache --evict-older-than 1d
-
       - name: Save Telegram Desktop cache.
-        if: >
-          env.ONLY_CACHE == 'false'
-            && github.ref_name == github.event.repository.default_branch
-            && fromJSON(steps.ccache-stats.outputs.misses) > 300
+        if: ${{ !cancelled() && env.ONLY_CACHE == 'false' }}
         uses: actions/cache/save@v6
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ steps.cache-tdesktop.outputs.cache-primary-key }}
 
+      - name: Prune older compiler caches.
+        if: ${{ !cancelled() && env.ONLY_CACHE == 'false' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CURRENT="${{ steps.cache-tdesktop.outputs.cache-primary-key }}"
+          gh cache list -R "$GITHUB_REPOSITORY" --key "Linux-tdesktop-" --json key --jq '.[].key' | while read -r key; do
+            [ "$key" = "$CURRENT" ] || gh cache delete "$key" -R "$GITHUB_REPOSITORY" || true
+          done
+
       - name: Check.
         if: env.ONLY_CACHE == 'false'
         run: |
-          filePath="out/Debug/Telegram"
+          filePath="out/Release/ekzegram"
           if test -f "$filePath"; then
             echo "Build successfully done! :)"
 
@@ -206,13 +226,17 @@ jobs:
       - name: Move artifact.
         if: env.UPLOAD_ARTIFACT == 'true'
         run: |
-          cd out/Debug
+          # FORK: strip with MiniDebugInfo, as the official release does.
+          Telegram/build/minidebug.sh out/Release/ekzegram
+          Telegram/build/minidebug.sh out/Release/Updater 2>/dev/null || true
+          cd out/Release
           mkdir artifact
-          mv {Telegram,Updater} artifact/
+          mv ekzegram artifact/
+          mv Updater artifact/ 2>/dev/null || true
       - uses: actions/upload-artifact@v7
         if: env.UPLOAD_ARTIFACT == 'true'
         name: Upload artifact.
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          path: out/Debug/artifact/
-          retention-days: 1
+          path: out/Release/artifact/
+          retention-days: 30
