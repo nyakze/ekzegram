@@ -235,7 +235,7 @@ bool GenerateDesktopFile(
 	DEBUG_LOG(("App Info: placing .desktop file to %1").arg(targetPath));
 	if (!QDir(targetPath).exists()) QDir().mkpath(targetPath);
 
-	const auto sourceFile = u":/misc/org.telegram.desktop.desktop"_q;
+	const auto sourceFile = u":/misc/ekzegram.desktop"_q;
 	const auto targetFile = targetPath
 		+ QGuiApplication::desktopFileName()
 		+ u".desktop"_q;
@@ -767,11 +767,11 @@ void start() {
 		}
 
 		if (!Core::UpdaterDisabled()) {
-			return u"org.telegram.desktop._%1"_q.arg(
+			return u"ekzegram._%1"_q.arg(
 				Core::Launcher::Instance().instanceHash().constData());
 		}
 
-		return u"org.telegram.desktop"_q;
+		return u"ekzegram"_q;
 	}());
 
 	LOG(("App ID: %1").arg(QGuiApplication::desktopFileName()));

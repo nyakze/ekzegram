@@ -60,11 +60,11 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName", "Telegram FZ-LLC"
-            VALUE "FileDescription", "Telegram Desktop"
+            VALUE "CompanyName", "ekzegram"
+            VALUE "FileDescription", "ekzegram"
             VALUE "FileVersion", "7.4.6.0"
-            VALUE "LegalCopyright", "Copyright (C) 2014-2026"
-            VALUE "ProductName", "Telegram Desktop"
+            VALUE "LegalCopyright", "Copyright (C) 2014-2026 Telegram FZ-LLC, 2026 ekzegram contributors"
+            VALUE "ProductName", "ekzegram"
             VALUE "ProductVersion", "7.4.6.0"
         END
     END

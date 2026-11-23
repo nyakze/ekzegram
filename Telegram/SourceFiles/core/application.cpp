@@ -1373,7 +1373,7 @@ bool Application::openInternalUrl(const QString &url, QVariant context) {
 }
 
 QString Application::changelogLink() const {
-	return u"https://telegramdesktop.github.io/tdesktop/changelog/"_q;
+	return u"https://github.com/nyakze/ekzegram/releases"_q;
 }
 
 bool Application::openCustomUrl(

@@ -36,10 +36,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 namespace {
 
 rpl::producer<TextWithEntities> Text1() {
-	return tr::lng_about_text1(
-		lt_api_link,
-		tr::lng_about_text1_api(tr::url(u"https://core.telegram.org/api"_q)),
-		tr::marked);
+	return rpl::single<TextWithEntities>({ .text =
+		"ekzegram is an unofficial fork of Telegram Desktop." });
 }
 
 rpl::producer<TextWithEntities> Text2() {
@@ -47,11 +45,11 @@ rpl::producer<TextWithEntities> Text2() {
 		lt_gpl_link,
 		rpl::single(tr::link(
 			"GNU GPL",
-			"https://github.com/telegramdesktop/tdesktop/blob/master/LICENSE")),
+			"https://github.com/nyakze/ekzegram/blob/dev/LICENSE")),
 		lt_github_link,
 		rpl::single(tr::link(
 			"GitHub",
-			"https://github.com/telegramdesktop/tdesktop")),
+			"https://github.com/nyakze/ekzegram")),
 		tr::marked);
 }
 
@@ -65,7 +63,7 @@ rpl::producer<TextWithEntities> Text3() {
 } // namespace
 
 void AboutBox(not_null<Ui::GenericBox*> box) {
-	box->setTitle(u"Telegram Desktop"_q);
+	box->setTitle(u"ekzegram"_q);
 
 	auto layout = box->verticalLayout();
 
