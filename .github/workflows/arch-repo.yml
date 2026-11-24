@@ -1,0 +1,95 @@
+# Builds the ekzegram-bin pacman package from the prebuilt release artifact
+# and publishes it to this repository's gh-pages branch as a pacman repo:
+#
+#   https://nyakze.github.io/ekzegram/ekzegram/os/x86_64
+#
+# Consumers add the [ekzegram] repo to pacman.conf and then plain
+# `pacman -Syu` / `paru` updates ekzegram like any other package.
+# See packaging/arch/README.md.
+
+name: arch-repo
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to package (e.g. v7.4.6-ekzegram1)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Build and publish pacman package
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - name: Install tools
+        run: pacman -Syu --noconfirm --needed git
+
+      - name: Check out sources
+        uses: actions/checkout@v4
+
+      - name: Create unprivileged build user
+        run: |
+          useradd -m builder
+          chown -R builder .
+
+      - name: Derive pkgver from release tag
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          ver="${TAG#v}"
+          ver="${ver//-/_}"
+          echo "Building version ${ver} (tag ${TAG})"
+          sed -i "s/^pkgver=.*/pkgver=${ver}/" packaging/arch/PKGBUILD
+
+      - name: Build package
+        working-directory: packaging/arch
+        # --nodeps: runtime deps are not needed to repack the binary.
+        run: runuser -u builder -- makepkg -f --noconfirm --nodeps
+
+      - name: Publish pacman repo to gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          pkgfile="$(basename "$(ls packaging/arch/ekzegram-bin-*.pkg.tar.zst)")"
+          echo "Publishing ${pkgfile}"
+
+          mkdir -p repo/ekzegram/os/x86_64
+          cp "packaging/arch/${pkgfile}" repo/ekzegram/os/x86_64/
+
+          pushd repo/ekzegram/os/x86_64
+          repo-add ekzegram.db.tar.gz "${pkgfile}"
+          # GitHub Pages does not serve symlinks reliably; use real files.
+          cp -f ekzegram.db.tar.gz ekzegram.db
+          cp -f ekzegram.files.tar.gz ekzegram.files
+          popd
+
+          touch repo/.nojekyll
+          cat > repo/index.html <<'EOF'
+          <!doctype html>
+          <meta charset="utf-8">
+          <title>ekzegram pacman repo</title>
+          <p>ekzegram pacman repository. Add to <code>pacman.conf</code>:</p>
+          <pre>[ekzegram]
+          SigLevel = Never
+          Server = https://nyakze.github.io/ekzegram/ekzegram/os/x86_64</pre>
+          EOF
+
+          cd repo
+          git init -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "ekzegram repo ${GITHUB_REF_NAME}"
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          # Orphan single-commit history so the repo never accumulates
+          # hundreds of megabytes of old packages.
+          git push -f origin gh-pages

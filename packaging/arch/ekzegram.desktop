@@ -1,0 +1,22 @@
+[Desktop Entry]
+Name=ekzegram
+Comment=Unofficial Telegram Desktop fork
+TryExec=/opt/ekzegram/ekzegram
+Exec=/opt/ekzegram/ekzegram -- %U
+Icon=ekzegram
+Terminal=false
+StartupWMClass=ekzegram
+Type=Application
+Categories=Chat;Network;InstantMessaging;Qt;
+MimeType=x-scheme-handler/tg;x-scheme-handler/tonsite;x-scheme-handler/ton;
+Keywords=tg;chat;im;messaging;messenger;sms;tdesktop;
+Actions=quit;
+DBusActivatable=false
+SingleMainWindow=true
+X-GNOME-UsesNotifications=true
+X-GNOME-SingleWindow=true
+
+[Desktop Action quit]
+Exec=/opt/ekzegram/ekzegram -quit
+Name=Quit ekzegram
+Icon=application-exit

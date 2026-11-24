@@ -1,0 +1,82 @@
+# Maintainer: nyakze <https://github.com/nyakze>
+#
+# Repackages the prebuilt Linux binary published on the fork's GitHub
+# Releases (ekzegram-linux.tar.gz). No compilation of tdesktop needed.
+#
+# pkgver mirrors the release tag: v7.4.6-ekzegram1 -> 7.4.6_ekzegram1
+# (pacman pkgver may not contain hyphens). When building manually for a new
+# release, bump pkgver accordingly; the CI workflow does this automatically.
+
+pkgname=ekzegram-bin
+pkgver=7.4.6_ekzegram1
+pkgrel=1
+pkgdesc="Unofficial Telegram Desktop fork (prebuilt release binary)"
+arch=('x86_64')
+url="https://github.com/nyakze/ekzegram"
+license=('GPL-3.0-or-later')
+depends=('glibc' 'gcc-libs' 'glib2' 'pango' 'cairo' 'fontconfig' 'freetype2'
+         'harfbuzz' 'graphite' 'libpng' 'bzip2' 'brotli' 'expat' 'zlib'
+         'libffi' 'pcre2' 'systemd-libs' 'util-linux-libs'
+         'libx11' 'libxcb' 'libxau' 'libxdmcp' 'libxext' 'libxrender'
+         'libthai' 'libdatrie')
+optdepends=(
+  'libnotify: desktop notifications'
+  'xdg-desktop-portal: native file dialogs and screen sharing'
+)
+provides=('ekzegram')
+conflicts=('ekzegram')
+# The release binary is already stripped and huge; never strip or split debug.
+options=('!strip' '!debug')
+
+# v7.4.6_ekzegram1 -> v7.4.6-ekzegram1
+_tag="v${pkgver//_/-}"
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/nyakze/ekzegram/releases/download/${_tag}/ekzegram-linux.tar.gz"
+        "SHA256SUMS.txt::https://github.com/nyakze/ekzegram/releases/download/${_tag}/SHA256SUMS.txt"
+        "ekzegram.desktop"
+        "ekzegram-16.png"
+        "ekzegram-32.png"
+        "ekzegram-48.png"
+        "ekzegram-64.png"
+        "ekzegram-128.png"
+        "ekzegram-256.png"
+        "ekzegram-512.png")
+# The two release artifacts are verified against the release's SHA256SUMS.txt
+# in prepare(), so this PKGBUILD never needs a checksum bump.
+sha256sums=('SKIP'
+            'SKIP'
+            'cd52609d19109aef3b9c4579511afda21a28c141003d66c8dfa632b1f3113fab'
+            '820e1a1e2abc248f710f1e39fd763a6cd8d35a2f9dea06e95e6c928f822ea883'
+            '675af2a78aede11fa19240ba0b7acacae5c8748aec045830377dfc0eee30cb18'
+            '9edcb39343db23c0683c4f3b1c018bd94f88c39a4fbe46b81611143f328b8be0'
+            'ba64f9ab31ae63b3c7253031619dc9a10913d843c5e9e62d6d501a273467f093'
+            '722574017eb603c5e7e2827899bc75cddd37b5643b82c9989ba3eecb8b628728'
+            '04107ffc3c847b278e1393529e44d9a1f23a987a9af9a0a6801e18ced77c5e15'
+            '6089b8738d8adbe503352b30ac5ed80981bd6ea9660c0add8a0d3fa0295cefce')
+
+prepare() {
+  # Verify the release tarball against the release's own SHA256SUMS.txt.
+  cd "$srcdir"
+  local expected
+  expected="$(awk '/  ekzegram-linux\.tar\.gz$/ {print $1}' SHA256SUMS.txt)"
+  if [[ -z "$expected" ]]; then
+    echo "ERROR: ekzegram-linux.tar.gz not listed in SHA256SUMS.txt" >&2
+    return 1
+  fi
+  echo "${expected}  ${pkgname}-${pkgver}.tar.gz" | sha256sum -c -
+}
+
+package() {
+  # The tarball extracts to a single 'ekzegram' binary.
+  install -Dm755 "$srcdir/ekzegram" "$pkgdir/opt/ekzegram/ekzegram"
+
+  install -Dm644 "$srcdir/ekzegram.desktop" "$pkgdir/usr/share/applications/ekzegram.desktop"
+
+  local size
+  for size in 16 32 48 64 128 256 512; do
+    install -Dm644 "$srcdir/ekzegram-${size}.png" \
+      "$pkgdir/usr/share/icons/hicolor/${size}x${size}/apps/ekzegram.png"
+  done
+
+  install -dm755 "$pkgdir/usr/bin"
+  ln -s /opt/ekzegram/ekzegram "$pkgdir/usr/bin/ekzegram"
+}
