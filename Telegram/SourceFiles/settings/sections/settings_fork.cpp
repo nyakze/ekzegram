@@ -17,6 +17,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/view/history_view_context_menu_fork.h"
 #include "lang/lang_keys.h"
 #include "menu/menu_item_save_to_markdown.h"
+#include "settings/sections/settings_main.h"
 #include "settings/settings_builder.h"
 #include "spellcheck/spellcheck_types.h"
 #include "ui/boxes/choose_language_box.h"
@@ -28,6 +29,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_settings.h"
 
 namespace Settings {
+using namespace Builder;
 namespace {
 
 void OfferRestart(not_null<Window::SessionController*> controller) {
