@@ -1,8 +1,8 @@
 [Desktop Entry]
 Name=ekzegram
 Comment=Unofficial Telegram Desktop fork
-TryExec=/opt/ekzegram/ekzegram
-Exec=/opt/ekzegram/ekzegram -- %U
+TryExec=/usr/bin/ekzegram
+Exec=/usr/bin/ekzegram -- %U
 Icon=ekzegram
 Terminal=false
 StartupWMClass=ekzegram
@@ -17,6 +17,6 @@ X-GNOME-UsesNotifications=true
 X-GNOME-SingleWindow=true
 
 [Desktop Action quit]
-Exec=/opt/ekzegram/ekzegram -quit
+Exec=/usr/bin/ekzegram -quit
 Name=Quit ekzegram
 Icon=application-exit

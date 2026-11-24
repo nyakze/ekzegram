@@ -52,6 +52,6 @@ release's `SHA256SUMS.txt` in `prepare()`, so no checksum bumps are needed.
 
 ## Installed layout
 
-- `/opt/ekzegram/ekzegram` — the binary (as before)
-- `/usr/bin/ekzegram` — symlink to the binary
-- `/usr/share/applications/ekzegram.desktop`, `/usr/share/icons/hicolor/*/apps/ekzegram.png`
+- `/usr/bin/ekzegram` — the binary
+- `/usr/share/applications/ekzegram.desktop`
+- `/usr/share/icons/hicolor/*/apps/ekzegram.png`

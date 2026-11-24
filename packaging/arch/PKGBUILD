@@ -49,7 +49,7 @@ source=("${pkgname}-${pkgver}.tar.${_ext}::https://github.com/nyakze/ekzegram/re
 # in prepare(), so this PKGBUILD never needs a checksum bump.
 sha256sums=('SKIP'
             'SKIP'
-            'cd52609d19109aef3b9c4579511afda21a28c141003d66c8dfa632b1f3113fab'
+            '7c0d3379883b456e5569dce1be33553908c6a25c09b544c8c5ae9ea200f99d78'
             '820e1a1e2abc248f710f1e39fd763a6cd8d35a2f9dea06e95e6c928f822ea883'
             '675af2a78aede11fa19240ba0b7acacae5c8748aec045830377dfc0eee30cb18'
             '9edcb39343db23c0683c4f3b1c018bd94f88c39a4fbe46b81611143f328b8be0'
@@ -72,7 +72,7 @@ prepare() {
 
 package() {
   # The tarball extracts to a single 'ekzegram' binary.
-  install -Dm755 "$srcdir/ekzegram" "$pkgdir/opt/ekzegram/ekzegram"
+  install -Dm755 "$srcdir/ekzegram" "$pkgdir/usr/bin/ekzegram"
 
   install -Dm644 "$srcdir/ekzegram.desktop" "$pkgdir/usr/share/applications/ekzegram.desktop"
 
@@ -81,7 +81,4 @@ package() {
     install -Dm644 "$srcdir/ekzegram-${size}.png" \
       "$pkgdir/usr/share/icons/hicolor/${size}x${size}/apps/ekzegram.png"
   done
-
-  install -dm755 "$pkgdir/usr/bin"
-  ln -s /opt/ekzegram/ekzegram "$pkgdir/usr/bin/ekzegram"
 }
