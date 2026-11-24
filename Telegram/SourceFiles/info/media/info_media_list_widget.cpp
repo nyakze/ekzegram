@@ -39,6 +39,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/history_item.h"
 #include "history/history_item_helpers.h"
 #include "history/view/history_view_context_menu.h"
+#include "history/view/history_view_context_menu_fork.h"
 #include "media/stories/media_stories_controller.h" // ...TogglePinnedToast.
 #include "media/stories/media_stories_share.h" // PrepareShareBox.
 #include "media/stories/media_stories_stealth.h"
@@ -1666,6 +1667,11 @@ void ListWidget::showContextMenu(
 				clearSelected();
 			}),
 			&st::menuIconSelect);
+		// FORK (ekzegram): show the total duration of the selected items.
+		Fork::AddShowSumDurations(
+			_contextMenu,
+			collectSelectedItems(),
+			_controller->parentController());
 	} else {
 		if (overSelected != SelectionState::NotOverSelectedItems) {
 			const auto selectionData = _provider->computeSelectionData(

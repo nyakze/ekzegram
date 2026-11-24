@@ -11,7 +11,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "chat_helpers/emoji_keywords.h"
 #include "core/application.h"
 #include "core/core_settings.h"
+#include "history/view/history_view_context_menu_fork.h"
 #include "lang/lang_keys.h"
+#include "menu/menu_item_save_to_markdown.h"
 #include "settings/settings_builder.h"
 #include "spellcheck/spellcheck_types.h"
 #include "ui/boxes/choose_language_box.h"
@@ -222,6 +224,73 @@ void BuildEmojiSection(
 	builder.addDividerText(tr::lng_settings_emoji_search_languages_about());
 }
 
+void BuildMenuSection(
+		SectionBuilder &builder,
+		not_null<Window::SessionController*> controller) {
+	builder.addSkip();
+	builder.addSubsectionTitle({
+		.id = u"ekzegram/menu"_q,
+		.title = tr::lng_settings_menu_title(),
+		.keywords = { u"menu"_q, u"search"_q, u"markdown"_q },
+	});
+
+	const auto search = builder.addButton({
+		.id = u"ekzegram/search_selected"_q,
+		.title = tr::lng_settings_search_engine(),
+		.st = &st::settingsButtonNoIcon,
+		.toggled = rpl::single(
+			Core::App().settings().fork().searchSelected()),
+		.keywords = { u"search"_q, u"engine"_q, u"selected"_q },
+	});
+	if (search) {
+		const auto state = search->lifetime().make_state<rpl::variable<bool>>(
+			Core::App().settings().fork().searchSelected());
+		search->toggleOn(state->value());
+		search->toggledChanges() | rpl::on_next([=](bool enabled) {
+			if (enabled == state->current()) {
+				return;
+			} else if (!enabled) {
+				state->set(false);
+				Core::App().settings().fork().setSearchSelected(false);
+				Core::App().saveSettingsDelayed();
+				return;
+			}
+			state->set(true);
+			controller->show(
+				Fork::MakeSearchEngineBox([=](bool ok) {
+					Core::App().settings().fork().setSearchSelected(ok);
+					Core::App().saveSettingsDelayed();
+					if (!ok) {
+						state->set(false);
+					}
+				}),
+				Ui::LayerOption::KeepOther);
+		}, search->lifetime());
+	}
+
+	AddForkToggle(
+		builder,
+		u"ekzegram/remember_media"_q,
+		tr::lng_settings_remember_media_menu(),
+		[] {
+			return Core::App().settings().fork().addToMenuRememberMedia();
+		},
+		[](bool value) {
+			Core::App().settings().fork().setAddToMenuRememberMedia(value);
+		},
+		{ u"media"_q, u"remember"_q, u"menu"_q });
+
+	const auto markdown = builder.addButton({
+		.id = u"ekzegram/markdown_clipboard"_q,
+		.title = tr::lng_settings_markdown_clipboard_text(),
+		.st = &st::settingsButtonNoIcon,
+		.keywords = { u"markdown"_q, u"clipboard"_q, u"save"_q },
+		.onClick = [=] {
+			controller->show(Menu::MakeMarkdownClipboardTextBox());
+		},
+	});
+}
+
 class Fork : public Section<Fork> {
 public:
 	Fork(
@@ -245,6 +314,7 @@ const auto kMeta = BuildHelper({
 	BuildWidgetsSection(builder, controller);
 	BuildPasscodeSection(builder);
 	BuildBehaviorSection(builder);
+	BuildMenuSection(builder, controller);
 	BuildEmojiSection(builder, controller);
 });
 

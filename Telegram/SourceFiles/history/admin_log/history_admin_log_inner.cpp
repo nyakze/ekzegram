@@ -18,6 +18,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/admin_log/history_admin_log_section.h"
 #include "history/admin_log/history_admin_log_filter.h"
 #include "history/view/history_view_context_menu.h"
+#include "history/view/history_view_context_menu_fork.h"
 #include "history/view/history_view_message.h"
 #include "history/view/history_view_reply.h"
 #include "history/view/history_view_service_message.h"
@@ -2288,6 +2289,10 @@ void InnerWidget::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 			_menu->addAction(tr::lng_context_copy_selected(tr::now), [=] {
 				copySelectedText();
 			}, &st::menuIconCopy);
+		}
+		// FORK (ekzegram): remember/replace message media.
+		if (view) {
+			Fork::AddReplaceMedia(_menu, view->data(), _controller);
 		}
 		if (lnkPhoto) {
 			const auto media = lnkPhoto->activeMediaView();

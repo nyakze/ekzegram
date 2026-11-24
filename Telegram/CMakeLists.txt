@@ -1209,6 +1209,8 @@ PRIVATE
     history/view/history_view_contact_status.h
     history/view/history_view_context_menu.cpp
     history/view/history_view_context_menu.h
+    history/view/history_view_context_menu_fork.cpp
+    history/view/history_view_context_menu_fork.h
     history/view/history_view_copy_selection.cpp
     history/view/history_view_copy_selection.h
     history/view/history_view_corner_buttons.cpp
@@ -1780,6 +1782,8 @@ PRIVATE
     menu/menu_item_download_files.h
     menu/menu_item_rate_transcribe_session.cpp
     menu/menu_item_rate_transcribe_session.h
+    menu/menu_item_save_to_markdown.cpp
+    menu/menu_item_save_to_markdown.h
     menu/menu_mark_as_read.cpp
     menu/menu_mark_as_read.h
     menu/menu_mute.cpp

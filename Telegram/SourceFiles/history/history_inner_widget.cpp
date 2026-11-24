@@ -10,6 +10,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "api/api_polls.h"
 #include "chat_helpers/stickers_emoji_pack.h"
 #include "core/application.h"
+#include "core/core_settings.h"
+#include "core/fork_settings.h"
 #include "core/file_utilities.h"
 #include "core/click_handler_types.h"
 #include "core/phone_click_handler.h"
@@ -33,6 +35,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/view/history_view_selection_modifier.h"
 #include "history/view/history_view_reply_button.h"
 #include "history/view/history_view_context_menu.h"
+#include "history/view/history_view_context_menu_fork.h"
 #include "history/view/history_view_copy_selection.h"
 #include "history/view/history_view_reaction_preview.h"
 #include "history/view/history_view_quick_action.h"
@@ -102,6 +105,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "menu/menu_item_download_files.h"
 #include "menu/menu_item_rate_transcribe.h"
 #include "menu/menu_item_rate_transcribe_session.h"
+#include "menu/menu_item_save_to_markdown.h"
 #include "menu/menu_timecode_action.h"
 #include "menu/menu_sponsored.h"
 #include "core/application.h"
@@ -139,6 +143,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_menu_icons.h"
 
 #include <QtGui/QClipboard>
+#include <QtGui/QDesktopServices>
 #include <QtWidgets/QApplication>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QMimeData>
@@ -3133,6 +3138,18 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 				std::move(callback),
 				&st::menuIconStats);
 		}
+		// FORK (ekzegram): remember/replace message media.
+		Fork::AddReplaceMedia(_menu, item, controller);
+	};
+	const auto addSwapMediaAction = [=] {
+		const auto ids = getSelectedItems();
+		const auto items = session->data().idsToItems(ids);
+		if (items.size() != 2) {
+			return;
+		}
+		Fork::AddSwapMedia(_menu, items[0], items[1], controller, [=] {
+			_widget->clearSelected();
+		});
 	};
 	const auto addPhotoActions = [&](not_null<PhotoData*> photo, HistoryItem *item) {
 		const auto media = photo->activeMediaView();
@@ -3475,6 +3492,7 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 						hasCopyRestrictionForSelected()));
 				}, &st::menuIconTranslate);
 			}
+			addSearchAction();
 		}
 		addItemActions(item, item);
 		if (!selectedState.count) {
@@ -3505,6 +3523,9 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 				}, &st::menuIconDelete);
 			}
 			addUnpinSelectedAction();
+			if (selectedState.count == 2) {
+				addSwapMediaAction();
+			}
 			if (selectedState.count > 0 && !hasCopyRestrictionForSelected()) {
 				Menu::AddDownloadFilesAction(
 					_menu,
@@ -3516,10 +3537,15 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 					controller,
 					selectedItemsForExport(),
 					this);
+				Menu::AddSaveToMarkdownFileAction(
+					_menu,
+					controller,
+					_selected);
 			}
 			_menu->addAction(tr::lng_context_clear_selection(tr::now), [=] {
 				_widget->clearSelected();
 			}, &st::menuIconSelect);
+			Fork::AddShowSumDurations(_menu, _selected, controller);
 		} else if (item) {
 			const auto itemId = item->fullId();
 			const auto blockSender = item->history()->peer->isRepliesChat();
@@ -3657,6 +3683,7 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 				return item;
 			}();
 			addItemActions(item, editItem);
+			addSearchAction();
 		} else {
 			addReplyAction(partItemOrLeader);
 			Tgw::ListSelection::FillMenu(this, item);
@@ -3817,6 +3844,9 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 				}, &st::menuIconDelete);
 			}
 			addUnpinSelectedAction();
+			if (selectedState.count == 2) {
+				addSwapMediaAction();
+			}
 			if (selectedState.count > 0 && !hasCopyRestrictionForSelected()) {
 				Menu::AddDownloadFilesAction(
 					_menu,
@@ -3828,6 +3858,10 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 					controller,
 					selectedItemsForExport(),
 					this);
+				Menu::AddSaveToMarkdownFileAction(
+					_menu,
+					controller,
+					_selected);
 			}
 			_menu->addAction(tr::lng_context_clear_selection(tr::now), [=] {
 				_widget->clearSelected();
@@ -4065,6 +4099,17 @@ void HistoryInner::copySelectedText(bool withImageText) {
 		.blocks = getSelectedRichBlocks(),
 		.withImageText = withImageText,
 	});
+}
+
+// FORK (ekzegram): search the selected text with the configured engine.
+void HistoryInner::addSearchAction() {
+	if (Core::App().settings().fork().searchSelected()) {
+		_menu->addAction(tr::lng_context_search_selected(tr::now), [=] {
+			auto url = Core::App().settings().fork().searchEngineUrl();
+			QDesktopServices::openUrl(
+				url.replace(u"%q"_q, getSelectedText().rich.text));
+		}, &st::menuIconIpAddress);
+	}
 }
 
 void HistoryInner::editCaptionUploadLayer(not_null<HistoryItem*> item) {

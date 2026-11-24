@@ -20,6 +20,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "api/api_toggling_media.h" // Api::ToggleFavedSticker
 #include "base/qt/qt_key_modifiers.h"
 #include "base/unixtime.h"
+#include "history/view/history_view_context_menu_fork.h"
 #include "history/view/history_view_list_widget.h"
 #include "history/view/controls/history_view_suggest_options.h"
 #include "history/view/history_view_cursor_state.h"
@@ -64,6 +65,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "menu/menu_item_download_files.h"
 #include "menu/menu_item_rate_transcribe.h"
 #include "menu/menu_item_rate_transcribe_session.h"
+#include "menu/menu_item_save_to_markdown.h"
 #include "menu/menu_timecode_action.h"
 #include "menu/menu_send.h"
 #include "ui/boxes/confirm_box.h"
@@ -1236,6 +1238,22 @@ void AddSaveRichHtmlAction(
 		list);
 }
 
+// FORK (ekzegram): save the selected messages as a markdown file.
+void AddSaveToMarkdownFileAction(
+		not_null<Ui::PopupMenu*> menu,
+		const ContextMenuRequest &request,
+		not_null<ListWidget*> list) {
+	if (!request.overSelection
+		|| request.selectedItems.empty()
+		|| list->hasCopyRestrictionForSelected()) {
+		return;
+	}
+	Menu::AddSaveToMarkdownFileAction(
+		menu,
+		request.navigation->parentController(),
+		request.selectedItems);
+}
+
 void AddReportAction(
 		not_null<Ui::PopupMenu*> menu,
 		const ContextMenuRequest &request,
@@ -1348,6 +1366,11 @@ void AddSelectionAction(
 	if (!AddClearSelectionAction(menu, request, list)) {
 		AddSelectMessageAction(menu, request, list);
 	}
+	// FORK (ekzegram): show the total duration of the selected items.
+	Fork::AddShowSumDurations(
+		menu,
+		request.selectedItems,
+		list->controller());
 }
 
 bool AddViewStatisticsAction(
@@ -1404,6 +1427,7 @@ void AddMessageActions(
 	AddDeleteAction(menu, request, list);
 	AddDownloadFilesAction(menu, request, list);
 	AddSaveRichHtmlAction(menu, request, list);
+	AddSaveToMarkdownFileAction(menu, request, list);
 	AddReportAction(menu, request, list);
 	AddBlockSenderAction(menu, request, list);
 	if (request.item && request.selectedItems.empty()) {
@@ -1417,6 +1441,22 @@ void AddMessageActions(
 		AddEphemeralAboutAction(menu, request.item);
 	}
 	AddRescheduleAction(menu, request, list);
+	// FORK (ekzegram): remember/replace/swap message media.
+	const auto controller = request.navigation->parentController();
+	if (request.item) {
+		Fork::AddReplaceMedia(menu, request.item, controller);
+	}
+	if (request.selectedItems.size() == 2) {
+		const auto item1 = controller->session().data().message(
+			request.selectedItems[0].msgId);
+		const auto item2 = controller->session().data().message(
+			request.selectedItems[1].msgId);
+		if (item1 && item2) {
+			Fork::AddSwapMedia(menu, item1, item2, controller, [=] {
+				list->cancelSelection();
+			});
+		}
+	}
 }
 
 void AddCopyLinkAction(

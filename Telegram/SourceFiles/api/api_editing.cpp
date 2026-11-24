@@ -820,4 +820,16 @@ void EditTodoList(
 		MTP_inputMediaTodo(TodoListDataToMTP(&data)));
 }
 
+namespace Fork {
+
+void EditMessageMedia(
+		not_null<HistoryItem*> item,
+		Api::SendOptions options,
+		MTPInputMedia media,
+		Fn<void(QString)> fail) {
+	EditMessage(item, options, [] {}, fail, media);
+}
+
+} // namespace Fork
+
 } // namespace Api

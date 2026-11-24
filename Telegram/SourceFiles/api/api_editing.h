@@ -73,4 +73,14 @@ void EditTodoList(
 	Fn<void(mtpRequestId requestId)> done,
 	Fn<void(const QString &error, mtpRequestId requestId)> fail);
 
+namespace Fork {
+
+void EditMessageMedia(
+	not_null<HistoryItem*> item,
+	Api::SendOptions options,
+	MTPInputMedia media,
+	Fn<void(QString)> fail);
+
+} // namespace Fork
+
 } // namespace Api

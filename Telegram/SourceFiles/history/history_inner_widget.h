@@ -554,6 +554,7 @@ private:
 	void reportAsGroup(FullMsgId itemId);
 	void blockSenderItem(FullMsgId itemId);
 	void blockSenderAsGroup(FullMsgId itemId);
+	void addSearchAction();
 	void copySelectedText(bool withImageText = false);
 	void editCaptionUploadLayer(not_null<HistoryItem*> item);
 
