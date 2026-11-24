@@ -12,7 +12,7 @@ The markdown export is adapted from Forkgram (https://github.com/forkgram/tdeskt
 #include "base/flat_map.h"
 #include "base/flat_set.h"
 #include "base/object_ptr.h"
-#include "ui/text/text_selection.h"
+#include "ui/text/text.h"
 
 class HistoryItem;
 
