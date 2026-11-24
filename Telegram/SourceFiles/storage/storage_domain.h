@@ -185,6 +185,7 @@ private:
 		IncorrectPasscode,
 		Failed,
 		Empty,
+		TooNew,
 	};
 
 	[[nodiscard]] StartModernResult startModern(PasscodeDerivation &derived);
