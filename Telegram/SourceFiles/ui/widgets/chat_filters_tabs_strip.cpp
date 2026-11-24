@@ -95,6 +95,11 @@ void ShowMenu(
 			[=] { return session->data().chatsFilters().chatsList(id); },
 			addAction);
 
+		Window::MenuAddMuteAllChatListAction(
+			controller,
+			[=] { return session->data().chatsFilters().chatsList(id); },
+			addAction);
+
 		auto showRemoveBox = [=] {
 			state->removeApi.request(base::make_weak(parent), controller, id);
 		};
@@ -126,6 +131,11 @@ void ShowMenu(
 		MarkAsReadMenu::AddChatListAction(
 			controller,
 			MarkAsReadMenu::ChatListKind::AllChats,
+			[=] { return session->data().chatsList(); },
+			addAction);
+
+		Window::MenuAddMuteAllChatListAction(
+			controller,
 			[=] { return session->data().chatsList(); },
 			addAction);
 	}

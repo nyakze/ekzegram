@@ -790,6 +790,11 @@ void FiltersMenu::showMenu(QPoint position, FilterId id) {
 			std::move(filteredChats),
 			addAction);
 
+		Window::MenuAddMuteAllChatListAction(
+			_session,
+			[=] { return _session->session().data().chatsFilters().chatsList(id); },
+			addAction);
+
 		addAction({
 			.text = tr::lng_filters_context_remove(tr::now),
 			.handler = crl::guard(&_outer, [=, this] {
@@ -807,6 +812,11 @@ void FiltersMenu::showMenu(QPoint position, FilterId id) {
 		MarkAsReadMenu::AddChatListAction(
 			_session,
 			MarkAsReadMenu::ChatListKind::AllChats,
+			[=] { return _session->session().data().chatsList(); },
+			addAction);
+
+		Window::MenuAddMuteAllChatListAction(
+			_session,
 			[=] { return _session->session().data().chatsList(); },
 			addAction);
 	}

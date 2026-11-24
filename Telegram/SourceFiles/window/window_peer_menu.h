@@ -97,6 +97,11 @@ void AddSendMoneyAction(
 	not_null<UserData*> user,
 	const PeerMenuCallback &addAction);
 
+void MenuAddMuteAllChatListAction(
+	not_null<SessionController*> controller,
+	Fn<not_null<Dialogs::MainList*>()> &&list,
+	const PeerMenuCallback &addAction);
+
 void PeerMenuExportChat(
 	not_null<Window::SessionController*> controller,
 	not_null<PeerData*> peer);

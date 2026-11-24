@@ -244,6 +244,20 @@ void SetActionText(not_null<QAction*> action, rpl::producer<QString> &&text) {
 	}, *lifetime);
 }
 
+void MuteAllChatList(not_null<Dialogs::MainList*> list) {
+	auto mute = std::vector<not_null<Data::Thread*>>();
+	for (const auto &row : list->indexed()->all()) {
+		if (const auto history = row->history()) {
+			if (!history->owner().notifySettings().isMuted(history)) {
+				mute.push_back(history);
+			}
+		}
+	}
+	for (const auto &thread : mute) {
+		thread->owner().notifySettings().update(thread, { .forever = true });
+	}
+}
+
 void PeerMenuAddMuteSubmenuAction(
 		not_null<Window::SessionController*> controller,
 		not_null<Data::Thread*> thread,
@@ -4316,6 +4330,42 @@ void UnpinAllMessages(
 			.confirmText = tr::lng_pinned_unpin(),
 		}),
 		Ui::LayerOption::CloseOther);
+}
+
+void MenuAddMuteAllChatListAction(
+		not_null<Window::SessionController*> controller,
+		Fn<not_null<Dialogs::MainList*>()> &&list,
+		const PeerMenuCallback &addAction) {
+	const auto hasUnmuted = [&] {
+		for (const auto &row : list()->indexed()->all()) {
+			if (const auto history = row->history()) {
+				if (!history->owner().notifySettings().isMuted(history)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}();
+	if (!hasUnmuted) {
+		return;
+	}
+
+	auto callback = [=] {
+		auto boxCallback = [=](Fn<void()> &&close) {
+			MuteAllChatList(list());
+			close();
+		};
+		controller->show(
+			Ui::MakeConfirmBox({
+				tr::lng_mute_all_sure(),
+				std::move(boxCallback)
+			}),
+			Ui::LayerOption::CloseOther);
+	};
+	addAction(
+		tr::lng_mute_all(tr::now),
+		std::move(callback),
+		&st::menuIconMute);
 }
 
 void ToggleHistoryArchived(
