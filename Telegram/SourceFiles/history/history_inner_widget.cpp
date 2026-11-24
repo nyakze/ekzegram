@@ -53,8 +53,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "tgw/tgw_scroll.h"
 #include "tgw/tgw_selection.h"
 #include "tgw/tgw_touch.h"
+#include "ui/widgets/menu/menu_action.h"
 #include "ui/widgets/menu/menu_add_action_callback_factory.h"
+#include "ui/widgets/menu/menu_common.h"
 #include "ui/widgets/menu/menu_multiline_action.h"
+#include "ui/widgets/buttons.h"
 #include "ui/widgets/popup_menu.h"
 #include "ui/widgets/elastic_scroll.h"
 #include "ui/delayed_activation.h"
@@ -85,6 +88,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "boxes/moderate_messages_box.h"
 #include "boxes/report_messages_box.h"
 #include "boxes/send_gif_with_caption_box.h"
+#include "boxes/share_box.h"
 #include "boxes/sticker_set_box.h"
 #include "boxes/translate_box.h"
 #include "chat_helpers/message_field.h"
@@ -92,6 +96,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/history_widget.h"
 #include "history/view/history_view_translate_tracker.h"
 #include "history/view/history_view_read_metrics_tracker.h"
+#include "base/flat_map.h"
 #include "base/platform/base_platform_info.h"
 #include "base/qt/qt_common_adapters.h"
 #include "base/qt/qt_key_modifiers.h"
@@ -111,7 +116,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "menu/menu_sponsored.h"
 #include "core/application.h"
 #include "apiwrap.h"
+#include "api/api_as_copy.h"
 #include "api/api_attached_stickers.h"
+#include "api/api_sending.h"
 #include "api/api_suggest_post.h"
 #include "api/api_stickers_creator.h"
 #include "api/api_toggling_media.h"
@@ -147,6 +154,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <QtGui/QDesktopServices>
 #include <QtWidgets/QApplication>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QLocale>
 #include <QtCore/QMimeData>
 
 namespace {
@@ -3139,8 +3147,44 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 				std::move(callback),
 				&st::menuIconStats);
 		}
+		// FORK (ekzegram): share any message.
+		_menu->addAction(tr::lng_background_share(tr::now), [=] {
+			FastShareMessage(controller, item);
+		}, &st::menuIconShare);
 		// FORK (ekzegram): remember/replace message media.
 		Fork::AddReplaceMedia(_menu, item, controller);
+	};
+	const auto msg = [=] {
+		const auto self = session->data().history(session->userPeerId());
+		auto message = Api::MessageToSend(Api::SendAction(self));
+		message.textWithTags = PrepareEditText(_dragStateItem);
+		return message;
+	};
+	// FORK (ekzegram): group selected media into one album message.
+	const auto groupToSaved = [=](bool deleteSelected) {
+		const auto ids = getSelectedItems();
+		if (ids.empty()) {
+			return;
+		}
+		auto toSend = Api::AsCopy::ToSend{
+			.peers = { _peer }
+		};
+		const auto items = session->data().idsToItems(ids);
+		auto filtered = ranges::views::all(
+			items
+		) | ranges::views::filter([=](HistoryItem *item) -> bool {
+			return item->media();
+		}) | ranges::to_vector;
+		Api::AsCopy::UpdateFileRef(
+			items,
+			[=] {
+				Api::AsCopy::SendAlbumFromItems(
+					std::move(filtered),
+					base::duplicate(toSend),
+					deleteSelected);
+			},
+			[=](QString a) { _controller->showToast(a); });
+		_widget->clearSelected();
 	};
 	const auto addSwapMediaAction = [=] {
 		const auto ids = getSelectedItems();
@@ -3170,6 +3214,10 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 					photo);
 			}, &st::menuIconStickers);
 		}
+		// FORK (ekzegram): send the photo to Saved Messages.
+		_menu->addAction(tr::lng_context_to_save_messages(tr::now), [=] {
+			Api::SendExistingPhoto(msg(), photo);
+		}, &st::menuIconImportTheme);
 	};
 	auto rateTranscriptionItem = (HistoryItem*)(nullptr);
 	const auto addDocumentActions = [&](not_null<DocumentData*> document, HistoryItem *item) {
@@ -3234,6 +3282,10 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 			&& Menu::HasRateTranscribeItem(item)) {
 			rateTranscriptionItem = item;
 		}
+		// FORK (ekzegram): send the document to Saved Messages.
+		_menu->addAction(tr::lng_context_to_save_messages(tr::now), [=] {
+			Api::SendExistingDocument(msg(), document);
+		}, &st::menuIconImportTheme);
 	};
 
 #ifdef _DEBUG // Sometimes we need to save emoji to files.
@@ -3470,17 +3522,25 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 			const auto selectedText = getSelectedText();
 			if (!hasCopyRestrictionForSelected()
 				&& !selectedText.empty()) {
-				_menu->addAction(
-					(isUponSelected > 1
-						? tr::lng_context_copy_selected_items(tr::now)
-						: tr::lng_context_copy_selected(tr::now)),
-					[=] {
-						copySelectedText();
-						if (hasSelectedItems()) {
-							clearSelected();
-						}
-					},
+				auto owned = base::make_unique_q<Ui::Menu::Action>(
+					_menu->menu(),
+					_menu->st().menu,
+					Ui::Menu::CreateAction(
+						_menu,
+						(isUponSelected > 1
+							? tr::lng_context_copy_selected_items(tr::now)
+							: tr::lng_context_copy_selected(tr::now)),
+						[=] {
+							copySelectedText();
+							if (hasSelectedItems()) {
+								clearSelected();
+							}
+						}),
+					&st::menuIconCopy,
 					&st::menuIconCopy);
+				// FORK (ekzegram): an anonymized copy shortcut on the row.
+				addDepersonalized(owned.get());
+				_menu->addAction(std::move(owned));
 			}
 			if (item && !Ui::SkipTranslate(selectedText.rich)) {
 				const auto peer = item->history()->peer;
@@ -3524,6 +3584,9 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 				}, &st::menuIconDelete);
 			}
 			addUnpinSelectedAction();
+			if (selectedState.count > 1 && selectedState.count <= 10) {
+				Fork::AddGroupSelected(_menu, groupToSaved);
+			}
 			if (selectedState.count == 2) {
 				addSwapMediaAction();
 			}
@@ -3646,17 +3709,24 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 			addReplyAction(item);
 				const auto selectedText = getSelectedText();
 			if (!hasCopyRestrictionForSelected() && !selectedText.empty()) {
-				_menu->addAction(
-					((isUponSelected > 1)
-						? tr::lng_context_copy_selected_items(tr::now)
-						: tr::lng_context_copy_selected(tr::now)),
-					[=] {
-						copySelectedText();
-						if (hasSelectedItems()) {
-							clearSelected();
-						}
-					},
+				auto owned = base::make_unique_q<Ui::Menu::Action>(
+					_menu->menu(),
+					_menu->st().menu,
+					Ui::Menu::CreateAction(
+						_menu,
+						((isUponSelected > 1)
+							? tr::lng_context_copy_selected_items(tr::now)
+							: tr::lng_context_copy_selected(tr::now)),
+						[=] {
+							copySelectedText();
+							if (hasSelectedItems()) {
+								clearSelected();
+							}
+						}),
+					&st::menuIconCopy,
 					&st::menuIconCopy);
+				addDepersonalized(owned.get());
+				_menu->addAction(std::move(owned));
 			}
 			if (item && !Ui::SkipTranslate(selectedText.rich)) {
 				const auto peer = item->history()->peer;
@@ -3849,6 +3919,9 @@ void HistoryInner::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 				}, &st::menuIconDelete);
 			}
 			addUnpinSelectedAction();
+			if (selectedState.count > 1 && selectedState.count <= 10) {
+				Fork::AddGroupSelected(_menu, groupToSaved);
+			}
 			if (selectedState.count == 2) {
 				addSwapMediaAction();
 			}
@@ -4115,6 +4188,121 @@ void HistoryInner::addSearchAction() {
 				url.replace(u"%q"_q, getSelectedText().rich.text));
 		}, &st::menuIconIpAddress);
 	}
+}
+
+TextForMimeData HistoryInner::getDepersonalizedText() const {
+	auto selected = _selected;
+	if (_mouseAction == MouseAction::Selecting && _dragSelFrom && _dragSelTo) {
+		applyDragSelection(&selected);
+	}
+	if (selected.empty()) {
+		return {};
+	}
+
+	struct Part {
+		not_null<HistoryItem*> item;
+		const Data::Group *group = nullptr;
+		int person = 0;
+	};
+
+	auto personMap = base::flat_map<not_null<PeerData*>, int>();
+	auto hiddenPersonMap = base::flat_map<QString, int>();
+	auto personCounter = 1;
+
+	const auto personNumber = [&](not_null<HistoryItem*> item) {
+		if (const auto sender = item->originalSender()) {
+			const auto [it, inserted] = personMap.emplace(sender, personCounter);
+			if (inserted) ++personCounter;
+			return it->second;
+		} else if (const auto hidden = item->originalHiddenSenderInfo()) {
+			const auto [it, inserted] = hiddenPersonMap.emplace(
+				hidden->name,
+				personCounter);
+			if (inserted) ++personCounter;
+			return it->second;
+		}
+		const auto [it, inserted] = personMap.emplace(
+			item->author(),
+			personCounter);
+		if (inserted) ++personCounter;
+		return it->second;
+	};
+
+	auto groups = base::flat_set<not_null<const Data::Group*>>();
+	auto texts = base::flat_map<Data::MessagePosition, Part>();
+
+	const auto addItem = [&](not_null<HistoryItem*> item) {
+		texts.emplace(item->position(), Part{
+			.item = item,
+			.person = personNumber(item),
+		});
+	};
+	const auto addGroup = [&](not_null<const Data::Group*> group) {
+		Expects(!group->items.empty());
+		const auto item = group->items.back();
+		texts.emplace(item->position(), Part{
+			.item = item,
+			.group = group.get(),
+			.person = personNumber(item),
+		});
+	};
+
+	for (const auto &item : selected) {
+		if (const auto group = session().data().groups().find(item)) {
+			if (groups.contains(group)) {
+				continue;
+			}
+			if (isSelectedGroup(&selected, group)) {
+				groups.emplace(group);
+				addGroup(group);
+			} else {
+				addItem(item);
+			}
+		} else {
+			addItem(item);
+		}
+	}
+
+	auto result = TextForMimeData();
+	const auto sep = u"\n"_q;
+	for (auto i = texts.begin(), e = texts.end(); i != e;) {
+		const auto &part = i->second;
+		const auto time = u"[%1] "_q.arg(
+			QLocale().toString(ItemDateTime(part.item), QLocale::ShortFormat));
+		const auto person = tr::lng_depersonalized_person(
+			tr::now,
+			lt_number,
+			part.person);
+		auto line = TextForMimeData::Simple(time + person + u" "_q);
+		auto body = part.group
+			? HistoryGroupText(not_null<const Data::Group*>{ part.group })
+			: HistoryItemText(part.item);
+		line.append(std::move(body));
+		result.append(std::move(line));
+		if (++i != e) {
+			result.append(sep);
+		}
+	}
+	return result;
+}
+
+void HistoryInner::addDepersonalized(not_null<Ui::RpWidget*> parent) {
+	const auto button = Ui::CreateChild<Ui::IconButton>(
+		parent,
+		st::botDownloadCancel);
+	button->setIconOverride(&st::menuIconStealth, &st::menuIconStealth);
+	button->move(st::depersonalizedButtonX, st::depersonalizedButtonY);
+	button->show();
+
+	button->setClickedCallback([=] {
+		if (!showCopyRestrictionForSelected()) {
+			TextUtilities::SetClipboardText(getDepersonalizedText());
+			clearSelected();
+			if (_menu) {
+				_menu->hide();
+			}
+		}
+	});
 }
 
 void HistoryInner::editCaptionUploadLayer(not_null<HistoryItem*> item) {

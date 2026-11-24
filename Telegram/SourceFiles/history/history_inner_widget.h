@@ -82,6 +82,7 @@ class ChatTheme;
 class ChatStyle;
 class ElasticScroll;
 class PopupMenu;
+class RpWidget;
 struct ChatPaintContext;
 class PathShiftGradient;
 struct PeerUserpicView;
@@ -170,6 +171,7 @@ public:
 		const QVector<MTPMessage> &messages);
 
 	[[nodiscard]] TextForMimeData getSelectedText() const;
+	[[nodiscard]] TextForMimeData getDepersonalizedText() const;
 	[[nodiscard]] Iv::RichPageBlocksSlice getSelectedRichBlocks() const;
 
 	void touchScrollUpdated(const QPoint &screenPos);
@@ -555,6 +557,7 @@ private:
 	void blockSenderItem(FullMsgId itemId);
 	void blockSenderAsGroup(FullMsgId itemId);
 	void addSearchAction();
+	void addDepersonalized(not_null<Ui::RpWidget*> parent);
 	void copySelectedText(bool withImageText = false);
 	void editCaptionUploadLayer(not_null<HistoryItem*> item);
 

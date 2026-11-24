@@ -9,6 +9,7 @@ The context menu items are adapted from Forkgram (https://github.com/forkgram/td
 */
 #include "history/view/history_view_context_menu_fork.h"
 
+#include "api/api_as_copy.h"
 #include "api/api_common.h"
 #include "api/api_editing.h"
 #include "base/flat_map.h"
@@ -213,8 +214,12 @@ void AddSwapMedia(
 				controller->showToast(u"Message #2: "_q + e);
 			});
 		};
-		// FORK (ekzegram): forkgram refreshes file refs via Api::AsCopy first.
-		addAction(u"Try to swap media"_q, swap);
+		addAction(u"Try to swap media"_q, [=] {
+			const auto fail = [=](const QString &from) {
+				controller->showToast(u"Failed from: "_q + from);
+			};
+			Api::AsCopy::UpdateFileRef({ item1, item2 }, swap, fail);
+		});
 	}
 }
 

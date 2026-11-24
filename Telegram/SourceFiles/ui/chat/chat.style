@@ -1114,6 +1114,8 @@ botDownloadCancel: IconButton {
 	rippleAreaSize: 20px;
 	ripple: defaultRippleAnimationBgOver;
 }
+depersonalizedButtonX: 17px;
+depersonalizedButtonY: 7px;
 chatUniqueGiftBorder: 4px;
 chatUniqueGiftBadgePadding: margins(12px, 0px, 12px, 2px);
 chatUniqueGiftMaxWidth: 272px;
