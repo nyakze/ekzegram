@@ -15,6 +15,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "storage/storage_domain.h"
 #include "mainwindow.h"
 #include "core/application.h"
+#include "core/core_settings.h"
 #include "api/api_text_entities.h"
 #include "ui/text/text.h"
 #include "ui/widgets/buttons.h"
@@ -31,6 +32,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_layers.h"
 #include "styles/style_passcode_box.h"
 #include "styles/style_window_lock_widgets.h"
+
+#include <QtCore/QTimer>
 
 namespace Window {
 namespace {
@@ -331,6 +334,30 @@ void PasscodeLockWidget::changed() {
 	if (!_error.isEmpty()) {
 		_error = QString();
 		update();
+	}
+
+	if (Core::App().settings().fork().autoSubmitPasscode()) {
+		QTimer::singleShot(300, this, [=] { submitOnChange(); });
+	}
+}
+
+void PasscodeLockWidget::submitOnChange() {
+	if (!Core::App().passcodeLocked()) {
+		return;
+	} else if (_passcode->text().isEmpty() || !passcodeCanTry()) {
+		return;
+	}
+	auto utf8 = _passcode->text().toUtf8();
+	const auto cleanse = gsl::finally([&] {
+		OPENSSL_cleanse(utf8.data(), utf8.size());
+	});
+	auto done = crl::guard(this, [=](bool correct) {
+		if (correct) {
+			Core::App().unlockPasscode(); // Destroys this widget.
+		}
+	});
+	if (!Core::App().domain().tryPasscode(utf8, std::move(done))) {
+		return;
 	}
 }
 

@@ -62,6 +62,29 @@ void BuildWidgetsSection(
 	builder.addDividerText(tr::lng_settings_disable_widgets_about());
 }
 
+void BuildPasscodeSection(SectionBuilder &builder) {
+	builder.addDivider();
+	const auto autoSubmit = builder.addButton({
+		.id = u"ekzegram/auto_submit_passcode"_q,
+		.title = tr::lng_settings_auto_submit_passcode(),
+		.st = &st::settingsButtonNoIcon,
+		.toggled = rpl::single(
+			Core::App().settings().fork().autoSubmitPasscode()),
+		.keywords = { u"passcode"_q, u"lock"_q, u"auto"_q },
+	});
+	if (autoSubmit) {
+		autoSubmit->toggledValue(
+		) | rpl::filter([=](bool enabled) {
+			return (enabled
+				!= Core::App().settings().fork().autoSubmitPasscode());
+		}) | rpl::on_next([=](bool enabled) {
+			Core::App().settings().fork().setAutoSubmitPasscode(enabled);
+			Core::App().saveSettingsDelayed();
+		}, autoSubmit->lifetime());
+	}
+	builder.addDividerText(tr::lng_settings_auto_submit_passcode_about());
+}
+
 class Fork : public Section<Fork> {
 public:
 	Fork(
@@ -83,6 +106,7 @@ const auto kMeta = BuildHelper({
 }, [](SectionBuilder &builder) {
 	const auto controller = builder.controller();
 	BuildWidgetsSection(builder, controller);
+	BuildPasscodeSection(builder);
 });
 
 const SectionBuildMethod kForkSection = kMeta.build;

@@ -97,6 +97,7 @@ private:
 	void systemUnlockDone(base::SystemUnlockResult result);
 	void changed();
 	void submit();
+	void submitOnChange();
 	void error();
 	void setDeriving(bool deriving);
 
