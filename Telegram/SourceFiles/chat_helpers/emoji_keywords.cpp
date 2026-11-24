@@ -94,6 +94,15 @@ void CreateCacheFilePath() {
 	return internal::CacheFileFolder() + u"/keywords/"_q + id;
 }
 
+// FORK (ekzegram): the language ids of every keyword pack ever downloaded
+// (the per-language cache files), used to keep emoji keyword search
+// multilingual across UI language switches and restarts.
+[[nodiscard]] QStringList CachedKeywordLanguageIds() {
+	return QDir(
+		internal::CacheFileFolder() + u"/keywords"_q
+	).entryList(QDir::Files, QDir::Name);
+}
+
 [[nodiscard]] LangPackData ReadLocalCache(const QString &id) {
 	auto file = QFile(CacheFilePath(id));
 	if (!file.open(QIODevice::ReadOnly)) {
@@ -577,6 +586,12 @@ std::vector<QString> EmojiKeywords::languages() {
 	yield(Lang::CurrentCloudManager().suggestedLanguage());
 	yield(Platform::SystemLanguage());
 	yieldList(QLocale::system().uiLanguages());
+	// FORK (ekzegram): also search in every language whose keyword pack was
+	// ever downloaded. Upstream drops a language as soon as the UI language
+	// changes away from it, while Windows keeps working (its system
+	// uiLanguages() lists all the user-preferred languages at once) and Linux
+	// does not (a single locale env), see upstream #29479.
+	yieldList(CachedKeywordLanguageIds());
 	for (const auto &list : _inputLanguages) {
 		yieldList(list);
 	}
