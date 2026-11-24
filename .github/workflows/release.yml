@@ -72,19 +72,20 @@ jobs:
         run: choco install innosetup -y --no-progress
 
       - name: Build the installer.
-        shell: bash
-        run: |
-          set -euo pipefail
-          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" \
-            /DMyAppVersion="${{ inputs.upstream_version }}" \
-            /DMyAppVersionFull="${TAG#v}" \
-            /DMyBuildTarget=win64 \
-            /DReleasePath="$(pwd -W)/release" \
-            /DMyOutputBaseFilename=ekzegram-setup \
-            Telegram/build/setup.iss
+        shell: pwsh
         env:
           TAG: ${{ inputs.tag }}
-          # The installer lands in OutputDir={#ReleasePath} as ekzegram-setup.exe.
+        run: |
+          # PowerShell, not bash: git-bash's MSYS path conversion would mangle
+          # the /D<name>=<value> switches into bogus paths.
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            "/DMyAppVersion=${{ inputs.upstream_version }}" `
+            "/DMyAppVersionFull=$($env:TAG.Substring(1))" `
+            "/DMyBuildTarget=win64" `
+            "/DReleasePath=$PWD\release" `
+            "/DMyOutputBaseFilename=ekzegram-setup" `
+            Telegram/build/setup.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Verify and upload.
         shell: bash
