@@ -13,8 +13,7 @@
 <p align="center">
   <a href="#features">Features</a> &nbsp;·&nbsp;
   <a href="#download">Download</a> &nbsp;·&nbsp;
-  <a href="#building">Building</a> &nbsp;·&nbsp;
-  <a href="#на-русском">Русский</a>
+  <a href="#building">Building</a>
 </p>
 
 **ekzegram** is an unofficial fork of [Telegram Desktop][tdesktop] — the same fast
@@ -41,8 +40,8 @@ of the app looks and behaves like the official client.
 * **Quality-of-life tweaks** — auto-copy login codes, passcode that submits itself when
   complete, last-seen time in the chat list, "Mute all", "Go to first message",
   emoji-search languages, up to 30 accounts.
-* **Safe downgrades** — `tdata` is backed up automatically before an older version
-  opens it.
+* **Downgrade safety** — if a `tdata` written by a newer version is opened by an older
+  one, it is moved intact to `tdata_backup` instead of being corrupted.
 
 ## Download
 
@@ -85,73 +84,6 @@ small commit stack so rebases stay cheap.
 * Builds are **unsigned**: on Windows/macOS you may need to allow the app through
   SmartScreen / Gatekeeper on first launch.
 * Distributed under the same terms as upstream: GPLv3 with the OpenSSL exception.
-
----
-
-## На русском
-
-**ekzegram** — неофициальный форк [Telegram Desktop][tdesktop]: тот же быстрый нативный
-клиент со своим названием, иконками и готовыми сборками, плюс небольшой набор удобных
-функций и исправлений. Форк следует за апстримом `dev`, всё остальное — как в официальном
-клиенте.
-
-### Возможности
-
-Все дополнения собраны в отдельном разделе **ekzegram** в Настройках; в остальном
-приложение выглядит и работает как официальный клиент.
-
-* **Отключение HTML-виджетов** в ботах — вместо них показывается заглушка (мини-приложения
-  продолжают работать).
-* **Переписывание ссылок** — правила с регулярными выражениями меняют вставляемые URL,
-  отмена — в один клик.
-* **Открытие ссылок внешними программами** — через собственную URI-схему, например
-  `potplayer://`.
-* **Отправка как копия** — сообщения уходят новыми, без подписи «Переслано от».
-* **Пункты меню сообщений** — сохранение выделенного в Markdown-файл, обезличенное
-  копирование («Person 1, Person 2…»), сборка медиа в альбом, отправка любого
-  сообщения, поиск выделенного текста, работа с медиа («запомнить», «заменить»,
-  «поменять местами»).
-* **Сохранение черновика** — Ctrl+S откладывает текущий черновик (текст, ответ,
-  вложения) и позже восстанавливает его.
-* **Удобные мелочи** — автокопирование кодов входа, автоматическая отправка кода
-  блокировки, время последнего посещения в списке чатов, «Заглушить все», «К первому
-  сообщению», языки поиска эмодзи, до 30 аккаунтов.
-* **Безопасный откат** — `tdata` автоматически сохраняется, прежде чем её откроет более
-  старая версия.
-
-### Скачать
-
-Готовые бинарники для **Linux (x86-64)**, **Windows (x64)** и **macOS (Apple Silicon и
-Intel)** — на странице [Releases][releases]: портативный zip и установщик для Windows,
-DMG для macOS. Профиль хранится отдельно от официального Telegram Desktop, так что оба
-клиента могут стоять рядом.
-
-### Собрать
-
-```bash
-./build-fork.sh
-```
-
-Скрипт сам подготовит субмодули и Docker-окружение `tdesktop:centos_env` и соберёт
-Release-бинарник в `out/Release/ekzegram`; подробности — в
-[docs/building-linux.md](docs/building-linux.md). Для сборки нужны свои API-креды
-([как получить][api_credentials]) — секреты `TDESKTOP_API_ID`/`TDESKTOP_API_HASH` для CI
-или `~/.config/tdesktop-fork/api.conf` для локальной сборки.
-
-### Благодарности
-
-* [Telegram Desktop][tdesktop] — официальный клиент, на котором основан форк.
-* [Forkgram][forkgram] от [23rd][23rd] — часть функций адаптирована из Forkgram и
-  распространяется по той же лицензии GPLv3. Спасибо авторам и участникам Forkgram.
-
-### Дисклеймер
-
-* Неофициальный форк. Не аффилирован с Telegram и не одобряется им; название «Telegram»
-  используется только для обозначения оригинального продукта.
-* Приложение не собирает персональные данные — см. [PRIVACY.md](PRIVACY.md).
-* Бинарники **не подписаны**: в Windows/macOS может понадобиться разрешить запуск через
-  SmartScreen / Gatekeeper при первом старте.
-* Распространяется на тех же условиях, что и апстрим: GPLv3 с исключением OpenSSL.
 
 ---
 
