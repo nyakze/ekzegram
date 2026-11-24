@@ -44,7 +44,10 @@ source=("${pkgname}-${pkgver}.tar.${_ext}::https://github.com/nyakze/ekzegram/re
         "ekzegram-64.png"
         "ekzegram-128.png"
         "ekzegram-256.png"
-        "ekzegram-512.png")
+        "ekzegram-512.png"
+        "ekzegram-symbolic.svg"
+        "ekzegram-attention-symbolic.svg"
+        "ekzegram-mute-symbolic.svg")
 # The two release artifacts are verified against the release's SHA256SUMS.txt
 # in prepare(), so this PKGBUILD never needs a checksum bump.
 sha256sums=('SKIP'
@@ -56,7 +59,10 @@ sha256sums=('SKIP'
             'ba64f9ab31ae63b3c7253031619dc9a10913d843c5e9e62d6d501a273467f093'
             '722574017eb603c5e7e2827899bc75cddd37b5643b82c9989ba3eecb8b628728'
             '04107ffc3c847b278e1393529e44d9a1f23a987a9af9a0a6801e18ced77c5e15'
-            '6089b8738d8adbe503352b30ac5ed80981bd6ea9660c0add8a0d3fa0295cefce')
+            '6089b8738d8adbe503352b30ac5ed80981bd6ea9660c0add8a0d3fa0295cefce'
+            'd3f4f29c4ce7f1304eb02fca2c4cf7568f1093498eaa077415107eb4c0841797'
+            '45f8059f2bc06ec80fab97fc7f932465f62accd21863d943769001e65b8105c3'
+            'b26816659925d229342e03fa64fd67b9cb655f9bedeca82aeef3c82ce37f2166')
 
 prepare() {
   # Verify the release tarball against the release's own SHA256SUMS.txt.
@@ -80,5 +86,16 @@ package() {
   for size in 16 32 48 64 128 256 512; do
     install -Dm644 "$srcdir/ekzegram-${size}.png" \
       "$pkgdir/usr/share/icons/hicolor/${size}x${size}/apps/ekzegram.png"
+  done
+
+  # Monochrome tray icons. KDE Plasma renders icon theme names ending in
+  # "-symbolic" as monochrome panel icons; the app looks up exactly these
+  # names (Platform::PanelIconName in platform/linux/tray_linux.cpp). The
+  # binary's own self-install of these never runs in fork builds (the
+  # updater is disabled), so the package must ship them.
+  local icon
+  for icon in ekzegram-symbolic ekzegram-attention-symbolic ekzegram-mute-symbolic; do
+    install -Dm644 "$srcdir/${icon}.svg" \
+      "$pkgdir/usr/share/icons/hicolor/symbolic/apps/${icon}.svg"
   done
 }

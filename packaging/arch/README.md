@@ -55,3 +55,20 @@ release's `SHA256SUMS.txt` in `prepare()`, so no checksum bumps are needed.
 - `/usr/bin/ekzegram` — the binary
 - `/usr/share/applications/ekzegram.desktop`
 - `/usr/share/icons/hicolor/*/apps/ekzegram.png`
+- `/usr/share/icons/hicolor/symbolic/apps/ekzegram{,-attention,-mute}-symbolic.svg`
+
+## Monochrome tray icon (KDE Plasma)
+
+The package ships three symbolic icons whose names match what the app looks
+up (`Platform::PanelIconName`, e.g. `ekzegram-symbolic`, plus `-attention`
+for unread and `-mute` for muted). Plasma renders icon theme names ending in
+`-symbolic` as monochrome panel icons colored by the panel theme, so the tray
+icon is monochrome out of the box. Because the icons are present, the
+in-app toggle *Settings → Advanced → Use monochrome icon* also appears on
+Linux (it is hidden otherwise); it defaults to on.
+
+The upstream binary copies these icons into `~/.local/share/icons` by itself,
+but that self-install is disabled in this fork (the updater is off), hence
+the packaging provides them. For a non-pacman install, copy the three SVGs
+from `Telegram/Resources/icons/tray_monochrome*.svg` into
+`~/.local/share/icons/hicolor/symbolic/apps/` under the names above.
