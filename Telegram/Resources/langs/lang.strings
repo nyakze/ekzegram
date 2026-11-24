@@ -692,7 +692,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_settings_quit_on_close" = "Quit the application";
 "lng_settings_close_to_taskbar" = "Close to taskbar";
 "lng_settings_monochrome_icon" = "Use monochrome icon";
-"lng_settings_check_for_updates" = "Check for updates";
+"lng_settings_check_for_updates" = "Check for updates automatically";
+"lng_settings_check_for_updates_now" = "Check now";
 "lng_settings_window_system" = "Window title bar";
 "lng_settings_title_chat_name" = "Show chat name";
 "lng_settings_title_account_name" = "Show active account";

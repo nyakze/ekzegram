@@ -43,6 +43,11 @@ constexpr auto kMinIntervalSec = qint64(23 * 60 * 60);
 	return result;
 }
 
+[[nodiscard]] rpl::event_stream<bool> &CheckedNoUpdate() {
+	static auto result = rpl::event_stream<bool>();
+	return result;
+}
+
 [[nodiscard]] bool PortableInstall() {
 #if defined Q_OS_WIN || defined Q_OS_MACOS
 	return true;
@@ -99,10 +104,11 @@ struct Version {
 class Checker final : public QObject {
 public:
 	Checker();
+	void checkNow();
 
 private:
 	void scheduleNext(int delayMs);
-	void perform();
+	void perform(bool manual);
 
 	QNetworkAccessManager _manager;
 	rpl::lifetime _lifetime;
@@ -132,11 +138,15 @@ void Checker::scheduleNext(int delayMs) {
 			scheduleNext(kRecheckInterval);
 			return;
 		}
-		perform();
+		perform(false);
 	});
 }
 
-void Checker::perform() {
+void Checker::checkNow() {
+	perform(true);
+}
+
+void Checker::perform(bool manual) {
 	auto request = QNetworkRequest(
 		QUrl(u"https://api.github.com/repos/nyakze/ekzegram/releases/latest"_q));
 	request.setRawHeader("User-Agent", "ekzegram-update-check");
@@ -150,6 +160,9 @@ void Checker::perform() {
 		settings.setUpdateCheckLastTime(QDateTime::currentSecsSinceEpoch());
 		scheduleNext(kRecheckInterval);
 		if (error != QNetworkReply::NoError) {
+			if (manual) {
+				CheckedNoUpdate().fire(false);
+			}
 			Core::App().saveSettingsDelayed();
 			return;
 		}
@@ -157,13 +170,15 @@ void Checker::perform() {
 		const auto tag = object.value(u"tag_name"_q).toString();
 		const auto parsed = ParseTag(tag);
 		if (parsed && NewerThanCurrent(*parsed)) {
-			if (settings.updateCheckSeenTag() != tag) {
+			if (manual || settings.updateCheckSeenTag() != tag) {
 				settings.setUpdateCheckSeenTag(tag);
 				Found().fire({
 					.tag = tag,
 					.url = object.value(u"html_url"_q).toString(),
 				});
 			}
+		} else if (manual) {
+			CheckedNoUpdate().fire(true);
 		}
 		Core::App().saveSettingsDelayed();
 	});
@@ -171,20 +186,38 @@ void Checker::perform() {
 
 } // namespace
 
+[[nodiscard]] std::unique_ptr<Checker> &Instance() {
+	static auto result = std::unique_ptr<Checker>();
+	return result;
+}
+
 bool Available() {
 	return PortableInstall();
 }
 
 void Start() {
-	static auto instance = std::unique_ptr<Checker>();
-	if (!Available() || instance) {
+	if (!Available() || Instance()) {
 		return;
 	}
-	instance = std::make_unique<Checker>();
+	Instance() = std::make_unique<Checker>();
+}
+
+void CheckNow() {
+	if (!Available()) {
+		return;
+	}
+	if (!Instance()) {
+		Instance() = std::make_unique<Checker>();
+	}
+	Instance()->checkNow();
 }
 
 rpl::producer<Info> found() {
 	return Found().events();
+}
+
+rpl::producer<bool> checkedNoUpdate() {
+	return CheckedNoUpdate().events();
 }
 
 } // namespace ForkUpdate
