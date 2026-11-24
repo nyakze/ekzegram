@@ -22,6 +22,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/application.h"
 #include "core/core_settings.h"
 #include "core/file_utilities.h"
+#include "core/fork_update_checker.h"
 #include "core/launcher.h"
 #include "core/update_channel.h"
 #include "core/update_checker.h"
@@ -524,6 +525,26 @@ void BuildSystemIntegrationSection(SectionBuilder &builder) {
 				settings->setTrayIconMonochrome(value);
 				Core::App().saveSettingsDelayed();
 			}, monochrome->lifetime());
+		}
+
+		// FORK (ekzegram): portable installs check GitHub for new releases.
+		const auto updateCheck = Core::ForkUpdate::Available()
+			? builder.addCheckbox({
+				.id = u"advanced/check_for_updates"_q,
+				.title = tr::lng_settings_check_for_updates(),
+				.checked = settings->checkForUpdates(),
+				.keywords = { u"update"_q, u"check"_q, u"release"_q },
+			})
+			: nullptr;
+
+		if (updateCheck) {
+			updateCheck->checkedChanges(
+			) | rpl::filter([=](bool value) {
+				return (value != settings->checkForUpdates());
+			}) | rpl::on_next([=](bool value) {
+				settings->setCheckForUpdates(value);
+				Core::App().saveSettingsDelayed();
+			}, updateCheck->lifetime());
 		}
 
 		const auto updateWorkmode = [=] {

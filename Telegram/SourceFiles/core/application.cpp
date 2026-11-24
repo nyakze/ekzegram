@@ -24,6 +24,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/core_screenshot_protection.h"
 #include "core/core_settings.h"
 #include "core/update_checker.h"
+#include "core/fork_update_checker.h"
 #include "core/shortcuts.h"
 #include "core/sandbox.h"
 #include "core/local_url_handlers.h"
@@ -31,6 +32,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/proxy_rotation_manager.h"
 #include "core/ui_integration.h"
 #include "core/version.h"
+#include "ui/toast/toast.h"
+#include "ui/text/text_entity.h"
 #include "chat_helpers/emoji_keywords.h"
 #include "chat_helpers/stickers_emoji_image_loader.h"
 #include "base/platform/base_platform_global_shortcuts.h"
@@ -402,6 +405,25 @@ void Application::run() {
 	setLastActiveWindow(_windows.front().second.get());
 	_windowInSettings = _lastActivePrimaryWindow = _lastActiveWindow;
 
+	// FORK (ekzegram): a toast when a newer ekzegram release is available.
+	Core::ForkUpdate::found(
+	) | rpl::on_next([=](const Core::ForkUpdate::Info &info) {
+		if (const auto window = activeWindow()) {
+			auto text = (u"ekzegram %1 is available. Open the release page."_q
+				).arg(info.tag);
+			auto entities = EntitiesInText();
+			const auto offset = int(text.indexOf(u"Open"_q));
+			entities.push_back(EntityInText(
+				EntityType::CustomUrl,
+				offset,
+				4,
+				info.url));
+			auto config = Ui::Toast::Config();
+			config.text = { text, entities };
+			window->showToast(std::move(config));
+		}
+	}, _lifetime);
+
 	_domain->activeChanges(
 	) | rpl::on_next([=](not_null<Main::Account*> account) {
 		showAccount(account);
@@ -567,6 +589,7 @@ void Application::startSettingsAndBackground() {
 	Local::rewriteSettingsIfNeeded();
 	Window::Theme::Background()->start();
 	checkSystemDarkMode();
+	Core::ForkUpdate::Start();
 	Ui::SetScreenReaderModeDisabled(
 		settings().readPref<bool>(kScreenReaderModeDisabledKey));
 }

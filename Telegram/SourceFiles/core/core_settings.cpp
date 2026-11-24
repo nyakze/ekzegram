@@ -413,7 +413,10 @@ QByteArray Settings::serialize() const {
 			[](int sum, const QString &code) {
 				return sum + Serialize::stringSize(code);
 			})
-		+ Serialize::stringSize(translateToCode);
+		+ Serialize::stringSize(translateToCode)
+		+ sizeof(qint32) // _checkForUpdates
+		+ sizeof(qint64) // _updateCheckLastTime
+		+ Serialize::stringSize(_updateCheckSeenTag);
 
 	auto result = QByteArray();
 	result.reserve(size);
@@ -600,6 +603,9 @@ QByteArray Settings::serialize() const {
 			stream << code;
 		}
 		stream << translateToCode;
+		stream << qint32(_checkForUpdates.current() ? 1 : 0);
+		stream << qint64(_updateCheckLastTime);
+		stream << _updateCheckSeenTag;
 	}
 
 	Ensures(result.size() == size);
@@ -747,6 +753,9 @@ void Settings::addFromSerialized(
 	qint32 languageCodesFormat = 0;
 	QStringList skipTranslationLanguageCodes;
 	QString translateToCode;
+	qint32 checkForUpdates = 1;
+	qint64 updateCheckLastTime = 0;
+	QString updateCheckSeenTag;
 
 	stream >> themesAccentColors;
 	if (!stream.atEnd()) {
@@ -1178,6 +1187,16 @@ void Settings::addFromSerialized(
 					languageCodesFormat = format;
 				}
 			}
+			// FORK (ekzegram): fields appended after the language codes.
+			// Only read them when the language section parsed fully, so the
+			// stream is exactly at their position.
+			if (languageCodesFormat == kLanguageCodesFormat
+				&& !tailStream.atEnd()) {
+				tailStream
+					>> checkForUpdates
+					>> updateCheckLastTime
+					>> updateCheckSeenTag;
+			}
 		}
 	}
 	if (stream.status() != QDataStream::Ok) {
@@ -1488,6 +1507,9 @@ void Settings::addFromSerialized(
 	_chatFiltersHorizontal = (chatFiltersHorizontal == 1);
 	_quickDialogAction = Dialogs::Ui::QuickDialogAction(quickDialogAction);
 	_notificationsVolume = notificationsVolume;
+	_checkForUpdates = (checkForUpdates == 1);
+	_updateCheckLastTime = updateCheckLastTime;
+	_updateCheckSeenTag = updateCheckSeenTag;
 }
 
 void Settings::clearPref(std::string_view key) {

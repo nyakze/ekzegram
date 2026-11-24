@@ -820,6 +820,28 @@ public:
 		return _trayIconMonochrome.changes();
 	}
 
+	void setCheckForUpdates(bool value) {
+		_checkForUpdates = value;
+	}
+	[[nodiscard]] bool checkForUpdates() const {
+		return _checkForUpdates.current();
+	}
+	[[nodiscard]] rpl::producer<bool> checkForUpdatesChanges() const {
+		return _checkForUpdates.changes();
+	}
+	void setUpdateCheckLastTime(qint64 value) {
+		_updateCheckLastTime = value;
+	}
+	[[nodiscard]] qint64 updateCheckLastTime() const {
+		return _updateCheckLastTime;
+	}
+	void setUpdateCheckSeenTag(const QString &value) {
+		_updateCheckSeenTag = value;
+	}
+	[[nodiscard]] QString updateCheckSeenTag() const {
+		return _updateCheckSeenTag;
+	}
+
 	void setCustomDeviceModel(const QString &model) {
 		_customDeviceModel = model;
 	}
@@ -1157,6 +1179,9 @@ private:
 	base::flags<Calls::Group::StickedTooltip> _hiddenGroupCallTooltips;
 	CloseBehavior _closeBehavior = CloseBehavior::Quit;
 	rpl::variable<bool> _trayIconMonochrome = true;
+	rpl::variable<bool> _checkForUpdates = true;
+	qint64 _updateCheckLastTime = 0;
+	QString _updateCheckSeenTag;
 	rpl::variable<QString> _customDeviceModel;
 	rpl::variable<Media::RepeatMode> _playerRepeatMode;
 	rpl::variable<Media::OrderMode> _playerOrderMode;

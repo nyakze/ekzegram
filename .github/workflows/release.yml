@@ -3,6 +3,9 @@ name: Make release.
 # Packages the CI artifacts of a given commit into a GitHub release.
 # Artifacts never leave GitHub — no local downloading needed.
 # Usage: Actions -> Make release -> Run workflow (fill in source_sha and tag).
+# FORK (ekzegram): the tag must be "v<upstream>-ekzegram<N>" where <N> matches
+# ForkBuildNumber in Telegram/SourceFiles/core/version.h at source_sha (bump
+# it in the release commit); a step below verifies this.
 
 on:
   workflow_dispatch:
@@ -30,6 +33,30 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      - name: Verify tag against ForkBuildNumber.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SHA="${{ inputs.source_sha }}"
+          NUM=$(gh api "repos/$GITHUB_REPOSITORY/contents/Telegram/SourceFiles/core/version.h?ref=$SHA" \
+              --jq '.content' | base64 -d \
+            | sed -n 's/^constexpr auto ForkBuildNumber = \([0-9][0-9]*\);.*/\1/p')
+          if [ -z "$NUM" ]; then
+            echo "No ForkBuildNumber at $SHA (pre-update-check build), skipping."
+            exit 0
+          fi
+          case "${{ inputs.tag }}" in
+            *-ekzegram"$NUM")
+              echo "Tag ${{ inputs.tag }} matches ForkBuildNumber $NUM."
+              ;;
+            *)
+              echo "ERROR: tag ${{ inputs.tag }} does not match ForkBuildNumber $NUM at $SHA"
+              echo "Bump ForkBuildNumber in core/version.h or fix the tag."
+              exit 1
+              ;;
+          esac
+
       - name: Download build artifacts.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
