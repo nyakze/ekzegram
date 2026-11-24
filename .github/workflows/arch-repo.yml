@@ -33,7 +33,7 @@ jobs:
     container: archlinux:base-devel
     steps:
       - name: Install tools
-        run: pacman -Syu --noconfirm --needed git
+        run: pacman -Syu --noconfirm --needed git github-cli
 
       - name: Check out sources
         uses: actions/checkout@v4
