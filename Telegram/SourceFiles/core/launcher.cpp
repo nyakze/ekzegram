@@ -38,6 +38,12 @@ base::options::toggle OptionHighDpiDownscale({
 	.name = "High DPI downscale",
 	.description = "Follow system interface scale settings exactly"
 		" (another approach, likely better quality).",
+	// FORK (ekzegram): enabled by default. Without it, monitors with mixed
+	// scaling factors get a wrong UI size (see upstream #31267, #1121), while
+	// upstream keeps it off for crisp text on near-low-DPI single displays.
+	// An explicit user choice is still respected: tdata/experimental_options.json
+	// stores only values that differ from the default.
+	.defaultValue = true,
 	.scope = [] {
 		return !Platform::IsMac()
 			&& QLibraryInfo::version() >= QVersionNumber(6, 8);
