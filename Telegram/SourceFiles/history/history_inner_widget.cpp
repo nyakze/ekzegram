@@ -4272,7 +4272,7 @@ TextForMimeData HistoryInner::getDepersonalizedText() const {
 		const auto person = tr::lng_depersonalized_person(
 			tr::now,
 			lt_number,
-			part.person);
+			QString::number(part.person));
 		auto line = TextForMimeData::Simple(time + person + u" "_q);
 		auto body = part.group
 			? HistoryGroupText(not_null<const Data::Group*>{ part.group })
