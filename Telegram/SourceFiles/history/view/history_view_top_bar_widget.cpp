@@ -1935,7 +1935,7 @@ void TopBarWidget::updateOnlineDisplay() {
 			text = QString::fromUtf8("\xe2\x9a\xa0\xef\xb8\x8f check info");
 			titlePeerTextOnline = false;
 		} else {
-			text = Data::OnlineText(user, now);
+			text = Data::OnlineTextFull(user, now);
 			titlePeerTextOnline = Data::OnlineTextActive(user, now);
 		}
 	} else if (const auto chat = peer->asChat()) {

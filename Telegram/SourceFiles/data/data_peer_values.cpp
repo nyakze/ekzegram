@@ -531,6 +531,14 @@ QString OnlineTextFull(not_null<UserData*> user, TimeId now) {
 	const auto till = user->lastseen().onlineTill();
 	const auto onlineFull = base::unixtime::parse(till);
 	const auto nowFull = base::unixtime::parse(now);
+
+	const auto minutes = (now - user->lastseen().onlineTill()) / 60;
+	if (!minutes) {
+		return tr::lng_status_lastseen_now(tr::now);
+	} else if (minutes < 60) {
+		return tr::lng_status_lastseen_minutes(tr::now, lt_count, minutes);
+	}
+
 	const auto locale = QLocale();
 	if (onlineFull.date() == nowFull.date()) {
 		const auto onlineTime = locale.toString(onlineFull.time(), QLocale::ShortFormat);
