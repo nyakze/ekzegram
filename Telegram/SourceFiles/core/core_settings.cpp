@@ -214,7 +214,8 @@ Settings::Settings()
 , _floatPlayerCorner(RectPart::TopRight)
 , _dialogsWithChatWidthRatio(DefaultDialogsWidthRatio())
 , _dialogsNoChatWidthRatio(DefaultDialogsWidthRatio())
-, _videoQuality({ .height = kInitialVideoQuality }) {
+, _videoQuality({ .height = kInitialVideoQuality })
+, _forkSettings(this) {
 }
 
 Settings::~Settings() = default;
@@ -1510,6 +1511,7 @@ void Settings::addFromSerialized(
 	_checkForUpdates = (checkForUpdates == 1);
 	_updateCheckLastTime = updateCheckLastTime;
 	_updateCheckSeenTag = updateCheckSeenTag;
+	_forkSettings.reload();
 }
 
 void Settings::clearPref(std::string_view key) {
@@ -1857,6 +1859,7 @@ void Settings::setLegacyEmojiVariants(QMap<QString, int> data) {
 }
 
 void Settings::resetOnLastLogout() {
+	_forkSettings.resetOnLastLogout();
 	_adaptiveForWide = true;
 	_moderateModeEnabled = false;
 

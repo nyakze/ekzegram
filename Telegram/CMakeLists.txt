@@ -659,6 +659,8 @@ PRIVATE
     core/external_control.h
     core/file_utilities.cpp
     core/file_utilities.h
+    core/fork_settings.cpp
+    core/fork_settings.h
     core/fork_update_checker.cpp
     core/fork_update_checker.h
     core/launcher.cpp

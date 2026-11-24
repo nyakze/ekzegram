@@ -8,6 +8,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #pragma once
 
 #include "core/core_settings_proxy.h"
+#include "core/fork_settings.h"
 #include "media/media_common.h"
 #include "dialogs/ui/dialogs_quick_action.h"
 #include "ui/widgets/chat_filters_tabs_mode.h"
@@ -137,6 +138,13 @@ public:
 
 	Settings();
 	~Settings();
+
+	[[nodiscard]] ForkSettings &fork() {
+		return _forkSettings;
+	}
+	[[nodiscard]] const ForkSettings &fork() const {
+		return _forkSettings;
+	}
 
 	[[nodiscard]] rpl::producer<> saveDelayedRequests() const {
 		return _saveDelayed.events();
@@ -1234,6 +1242,8 @@ private:
 	int _mediaGridZoomStep = 0;
 
 	QByteArray _photoEditorBrush;
+
+	ForkSettings _forkSettings;
 
 };
 
