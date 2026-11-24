@@ -32,6 +32,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_download_manager.h"
 #include "data/data_forum_topic.h"
 #include "data/data_saved_sublist.h"
+#include "forkgram/uri_menu.h"
 #include "history/view/media/history_view_save_document_action.h"
 #include "history/view/history_view_cursor_state.h"
 #include "history/view/history_view_service_message.h"
@@ -1616,6 +1617,10 @@ void ListWidget::showContextMenu(
 					QGuiApplication::clipboard()->setText(text);
 				},
 				&st::menuIconCopy);
+			// FORK (ekzegram): open the link through the configured URI scheme.
+			Forkgram::FillUrlWithCustomUri(
+				_contextMenu.get(),
+				link->copyToClipboardText());
 		}
 	}
 	if (overSelected == SelectionState::OverSelectedItems) {

@@ -11,6 +11,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "chat_helpers/emoji_keywords.h"
 #include "core/application.h"
 #include "core/core_settings.h"
+#include "forkgram/link_replacements.h"
+#include "forkgram/link_replacements_box.h"
+#include "forkgram/uri_menu.h"
 #include "history/view/history_view_context_menu_fork.h"
 #include "lang/lang_keys.h"
 #include "menu/menu_item_save_to_markdown.h"
@@ -291,6 +294,68 @@ void BuildMenuSection(
 	});
 }
 
+void BuildLinksSection(
+		SectionBuilder &builder,
+		not_null<Window::SessionController*> controller) {
+	builder.addSkip();
+	builder.addSubsectionTitle({
+		.id = u"ekzegram/links"_q,
+		.title = tr::lng_settings_links_title(),
+		.keywords = { u"links"_q, u"paste"_q, u"uri"_q },
+	});
+
+	const auto replacements = builder.addButton({
+		.id = u"ekzegram/link_replacements"_q,
+		.title = tr::lng_fork_link_replacements(),
+		.st = &st::settingsButtonNoIcon,
+		.label = rpl::single(rpl::empty_value()) | rpl::then(
+			Forkgram::LinkReplacements::Changes()
+		) | rpl::map([] {
+			return Forkgram::LinkReplacements::Enabled()
+				? QString::number(Forkgram::LinkReplacements::EnabledCount())
+				: tr::lng_settings_cloud_password_off(tr::now);
+		}),
+		.keywords = { u"link"_q, u"replace"_q, u"paste"_q, u"regex"_q },
+		.onClick = [=] {
+			controller->show(Box(Forkgram::LinkReplacementsBox));
+		},
+	});
+
+	const auto uri = builder.addButton({
+		.id = u"ekzegram/uri_scheme"_q,
+		.title = tr::lng_settings_uri_scheme(),
+		.st = &st::settingsButtonNoIcon,
+		.toggled = rpl::single(Core::App().settings().fork().askUriScheme()),
+		.keywords = { u"uri"_q, u"scheme"_q, u"custom"_q },
+	});
+	if (uri) {
+		const auto state = uri->lifetime().make_state<rpl::variable<bool>>(
+			Core::App().settings().fork().askUriScheme());
+		uri->toggleOn(state->value());
+		uri->toggledChanges() | rpl::on_next([=](bool enabled) {
+			if (enabled == state->current()) {
+				return;
+			} else if (!enabled) {
+				state->set(false);
+				Core::App().settings().fork().setAskUriScheme(false);
+				Core::App().saveSettingsDelayed();
+				return;
+			}
+			state->set(true);
+			controller->show(
+				Box(Forkgram::UriSchemeBox, [=](bool ok) {
+					Core::App().settings().fork().setAskUriScheme(ok);
+					Core::App().saveSettingsDelayed();
+					if (!ok) {
+						state->set(false);
+					}
+				}),
+				Ui::LayerOption::KeepOther);
+		}, uri->lifetime());
+	}
+	builder.addDividerText(tr::lng_fork_link_replacements_about());
+}
+
 class Fork : public Section<Fork> {
 public:
 	Fork(
@@ -314,6 +379,7 @@ const auto kMeta = BuildHelper({
 	BuildWidgetsSection(builder, controller);
 	BuildPasscodeSection(builder);
 	BuildBehaviorSection(builder);
+	BuildLinksSection(builder, controller);
 	BuildMenuSection(builder, controller);
 	BuildEmojiSection(builder, controller);
 });

@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "chat_helpers/message_field.h"
 
+#include "forkgram/link_replacements.h"
 #include "history/history_widget.h"
 #include "history/history.h" // History::session
 #include "history/history_item.h" // HistoryItem::originalText
@@ -1708,7 +1709,7 @@ void FrozenInfoBox(
 Ui::InputField::MimeDataHook WrappedMessageFieldMimeHook(
 		Ui::InputField::MimeDataHook original,
 		not_null<Ui::InputField*> field) {
-	return [field, originalHook = std::move(original)](
+	auto hook = [field, originalHook = std::move(original)](
 			not_null<const QMimeData*> data,
 			Ui::InputField::MimeAction action) {
 		if (data->hasFormat(u"application/x-telegram-input-field"_q)) {
@@ -1722,6 +1723,10 @@ Ui::InputField::MimeDataHook WrappedMessageFieldMimeHook(
 		}
 		return originalHook ? originalHook(data, action) : false;
 	};
+	// FORK (ekzegram): rewrite pasted links by the user's rules.
+	return Forkgram::LinkReplacements::WrappedMimeHook(
+		std::move(hook),
+		field);
 }
 
 bool PasteAsPlainTextRequested() {

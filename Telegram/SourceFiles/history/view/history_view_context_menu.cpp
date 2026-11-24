@@ -20,6 +20,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "api/api_toggling_media.h" // Api::ToggleFavedSticker
 #include "base/qt/qt_key_modifiers.h"
 #include "base/unixtime.h"
+#include "forkgram/uri_menu.h"
 #include "history/view/history_view_context_menu_fork.h"
 #include "history/view/history_view_list_widget.h"
 #include "history/view/controls/history_view_suggest_options.h"
@@ -1474,6 +1475,8 @@ void AddCopyLinkAction(
 		action,
 		[=] { QGuiApplication::clipboard()->setText(text); },
 		&st::menuIconCopy);
+	// FORK (ekzegram): open the link through the configured URI scheme.
+	Forkgram::FillUrlWithCustomUri(menu, text);
 }
 
 void EditTagBox(

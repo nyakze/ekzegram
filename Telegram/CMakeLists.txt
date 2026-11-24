@@ -1044,6 +1044,14 @@ PRIVATE
     export/view/export_view_settings.h
     export/view/export_view_top_bar.cpp
     export/view/export_view_top_bar.h
+    forkgram/link_replacements.cpp
+    forkgram/link_replacements.h
+    forkgram/link_replacements_box.cpp
+    forkgram/link_replacements_box.h
+    forkgram/uri_menu.cpp
+    forkgram/uri_menu.h
+    forkgram/uri_open.cpp
+    forkgram/uri_open.h
     history/admin_log/history_admin_log_filter.cpp
     history/admin_log/history_admin_log_filter.h
     history/admin_log/history_admin_log_inner.cpp

@@ -35,6 +35,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "editor/photo_editor.h"
 #include "editor/photo_editor_layer_widget.h"
 #include "editor/video/video_editor_layer.h"
+#include "forkgram/link_replacements.h"
 #include "history/history_drag_area.h"
 #include "history/history_item.h"
 #include "history/history.h"
@@ -618,7 +619,8 @@ void EditCaptionBox::setupField() {
 	) | rpl::on_next([=] {
 		captionResized();
 	}, _field->lifetime());
-	_field->setMimeDataHook([=](
+	// FORK (ekzegram): rewrite pasted links by the user's rules.
+	_field->setMimeDataHook(Forkgram::LinkReplacements::WrappedMimeHook([=](
 			not_null<const QMimeData*> data,
 			Ui::InputField::MimeAction action) {
 		if (action == Ui::InputField::MimeAction::Check) {
@@ -632,7 +634,7 @@ void EditCaptionBox::setupField() {
 			return fileFromClipboard(data);
 		}
 		Unexpected("Action in MimeData hook.");
-	});
+	}, _field.get()));
 
 	_aiButton = Ui::SetupCaptionAiButton({
 		.parent = this,
