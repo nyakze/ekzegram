@@ -367,6 +367,8 @@ private:
 	crl::time _suppressAllEnd = 0;
 	crl::time _suppressSongStart = 0;
 
+	crl::time getFadeDuration();
+
 };
 
 [[nodiscard]] Ui::PreparedFileInformation PrepareForSending(
