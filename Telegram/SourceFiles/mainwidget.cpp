@@ -123,7 +123,10 @@ base::options::toggle OptionUseNewChatView({
 	.id = kOptionUseNewChatView,
 	.name = "New chat view",
 	.description = "Open chats through the new section.",
-	.defaultValue = true,
+	// FORK (ekzegram): off by default; upstream enables it. An explicit
+	// user choice is still respected: tdata/experimental_options.json only
+	// stores values that differ from the default.
+	.defaultValue = false,
 });
 
 } // namespace

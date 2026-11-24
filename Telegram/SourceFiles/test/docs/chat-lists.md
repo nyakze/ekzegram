@@ -75,10 +75,11 @@ section, a `ChatWidget` whose constructor `ChatWidget::ChatWidget`
 With it off, the window's own `HistoryWidget` builds a `HistoryInner` in
 `HistoryWidget::showHistory` (`history/history_widget.cpp`).
 
-The option is on by default (`OptionUseNewChatView` in `mainwidget.cpp` has
-`.defaultValue = true`), and the same gate serves every window, the primary
-one included. An explicit `false` for it in `tdata/experimental_options.json`
-or a runtime change can leave it off; the read/set/restore idiom below guards
+The option is off by default in ekzegram (`OptionUseNewChatView` in
+`mainwidget.cpp` has `.defaultValue = false`; upstream defaults it on),
+and the same gate serves every window, the primary one included. An
+explicit `true` for it in `tdata/experimental_options.json`
+or a runtime change can leave it on; the read/set/restore idiom below guards
 those cases. It decides for an ordinary History only: forum topics
 and sublists take their own `ChatMemento` routes, `SessionNavigation::showTopic`
 and `showSublist`, whatever its value, and `SessionController::showPeerHistory`
