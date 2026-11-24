@@ -67,7 +67,7 @@ jobs:
           WIN_BIN=$(find work/Windows. -type f -name 'ekzegram.exe' | head -1)
           test -n "$LINUX_BIN" && test -n "$WIN_BIN"
 
-          tar -czf dist/ekzegram-linux.tar.gz -C "$(dirname "$LINUX_BIN")" ekzegram
+          tar -cJf dist/ekzegram-linux.tar.xz -C "$(dirname "$LINUX_BIN")" ekzegram
           (cd "$(dirname "$WIN_BIN")" && zip -q "$OLDPWD/dist/ekzegram-windows.zip" ekzegram.exe)
 
           for ARCH in arm64 x86_64; do
@@ -131,7 +131,7 @@ jobs:
 
           | Archive | Build | Notes |
           |---|---|---|
-          | \`ekzegram-linux.tar.gz\` | Release | |
+          | \`ekzegram-linux.tar.xz\` | Release | |
           | \`ekzegram-windows.zip\` | Release | |
           | \`ekzegram-macos-arm64.zip\` | Release | Apple Silicon |
           | \`ekzegram-macos-x86_64.zip\` | Release | Intel (also runs on Apple Silicon via Rosetta) |
@@ -160,7 +160,7 @@ jobs:
           else
             PRE=""
           fi
-          gh release create "$TAG" dist/ekzegram-linux.tar.gz dist/ekzegram-windows.zip dist/ekzegram-macos-arm64.zip dist/ekzegram-macos-x86_64.zip dist/SHA256SUMS.txt \
+          gh release create "$TAG" dist/ekzegram-linux.tar.xz dist/ekzegram-windows.zip dist/ekzegram-macos-arm64.zip dist/ekzegram-macos-x86_64.zip dist/SHA256SUMS.txt \
             --repo "$GITHUB_REPOSITORY" \
             --title "ekzegram $VERSION" \
             --notes-file notes.md \
