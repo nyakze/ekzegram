@@ -20,6 +20,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "lang/lang_cloud_manager.h"
 #include "lang/lang_instance.h"
 #include "core/application.h"
+#include "core/core_settings.h"
 #include "mtproto/web_proxy/web_proxy_transport.h"
 #include "mtproto/mtp_instance.h"
 #include "mtproto/mtproto_dc_options.h"
@@ -182,6 +183,15 @@ auto GenerateCodes() {
 		Ui::Toast::Show(disabled
 			? u"WebView transport blocked."_q
 			: u"WebView transport unblocked."_q);
+	});
+	codes.emplace(u"nowidgetgram"_q, [](SessionController *window) {
+		auto &fork = Core::App().settings().fork();
+		const auto disabled = !fork.widgetsDisabled();
+		fork.setWidgetsDisabled(disabled);
+		Core::App().saveSettingsDelayed();
+		Ui::Toast::Show(disabled
+			? u"HTML widgets will be disabled after restart."_q
+			: u"HTML widgets will be enabled after restart."_q);
 	});
 
 	auto audioFilters = u"Audio files (*.wav *.mp3);;"_q + FileDialog::AllFilesFilter();

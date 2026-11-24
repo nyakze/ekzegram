@@ -8,6 +8,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "tgw/tgw_remote.h"
 
 #include "base/timer.h"
+#include "core/application.h"
+#include "core/core_settings.h"
 #include "core/version.h"
 #include "platform/platform_widget_helper.h"
 #include "test/test_widget_helper_probe.h"
@@ -515,6 +517,12 @@ void PublishEnd(Reports &reports, const std::string &reason) {
 }
 
 [[nodiscard]] Choice DefaultPlace() {
+	if (Core::App().settings().fork().widgetsDisabled()) {
+		return Logged({
+			.place = EnginePlace::Nowhere,
+			.reason = u"HTML widgets are disabled in the settings"_q,
+		}, QString());
+	}
 	const auto place = HelperAvailable()
 		? EnginePlace::Helper
 		: EnginePlace::Nowhere;
