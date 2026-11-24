@@ -51,6 +51,8 @@ void ForkSettings::reload() {
 	_hideFromBlockedUsers = _owner->readPref<bool>(kHideFromBlockedUsers, false);
 	_markdownClipboardText = QString::fromUtf8(
 		_owner->readPref<QByteArray>(kMarkdownClipboardText));
+	_emojiSearchLanguages = QString::fromUtf8(
+		_owner->readPref<QByteArray>(kEmojiSearchLanguages));
 }
 
 void ForkSettings::resetOnLastLogout() {

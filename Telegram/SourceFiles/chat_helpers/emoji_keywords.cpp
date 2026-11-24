@@ -12,6 +12,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "lang/lang_cloud_manager.h"
 #include "lang/lang_keys.h"
 #include "core/application.h"
+#include "core/core_settings.h"
 #include "base/platform/base_platform_info.h"
 #include "ui/emoji_config.h"
 #include "main/main_domain.h"
@@ -572,6 +573,16 @@ std::vector<QString> EmojiKeywords::languages() {
 	if (!_api) {
 		return {};
 	}
+
+	// FORK (ekzegram): an explicit "Emoji search languages" pick replaces
+	// the heuristic list entirely, so search is fully user-controllable.
+	const auto chosen = Core::App().settings().fork().emojiSearchLanguages();
+	if (!chosen.isEmpty()) {
+		auto result = chosen.split(',', Qt::SkipEmptyParts);
+		result.sort();
+		return { result.begin(), result.end() };
+	}
+
 	refreshInputLanguages();
 
 	auto result = std::vector<QString>();

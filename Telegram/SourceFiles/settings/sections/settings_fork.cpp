@@ -8,10 +8,13 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "settings/sections/settings_fork.h"
 
 #include "settings/settings_common_session.h"
+#include "chat_helpers/emoji_keywords.h"
 #include "core/application.h"
 #include "core/core_settings.h"
 #include "lang/lang_keys.h"
 #include "settings/settings_builder.h"
+#include "spellcheck/spellcheck_types.h"
+#include "ui/boxes/choose_language_box.h"
 #include "ui/boxes/confirm_box.h"
 #include "ui/ui_utility.h"
 #include "ui/wrap/vertical_layout.h"
@@ -31,11 +34,34 @@ void OfferRestart(not_null<Window::SessionController*> controller) {
 	}));
 }
 
+void AddForkToggle(
+		SectionBuilder &builder,
+		const QString &id,
+		rpl::producer<QString> title,
+		Fn<bool()> current,
+		Fn<void(bool)> set,
+		QStringList keywords) {
+	const auto button = builder.addButton({
+		.id = id,
+		.title = std::move(title),
+		.st = &st::settingsButtonNoIcon,
+		.toggled = rpl::single(current()),
+		.keywords = std::move(keywords),
+	});
+	if (button) {
+		button->toggledValue(
+		) | rpl::filter([=](bool value) {
+			return (value != current());
+		}) | rpl::on_next([=](bool value) {
+			set(value);
+			Core::App().saveSettingsDelayed();
+		}, button->lifetime());
+	}
+}
+
 void BuildWidgetsSection(
 		SectionBuilder &builder,
 		not_null<Window::SessionController*> controller) {
-	const auto &fork = Core::App().settings().fork();
-
 	builder.addSubsectionTitle({
 		.id = u"ekzegram/widgets"_q,
 		.title = tr::lng_settings_widgets_title(),
@@ -46,13 +72,15 @@ void BuildWidgetsSection(
 		.id = u"ekzegram/disable_widgets"_q,
 		.title = tr::lng_settings_disable_widgets(),
 		.st = &st::settingsButtonNoIcon,
-		.toggled = rpl::single(fork.widgetsDisabled()),
+		.toggled = rpl::single(
+			Core::App().settings().fork().widgetsDisabled()),
 		.keywords = { u"widgets"_q, u"html"_q, u"bots"_q },
 	});
 	if (widgets) {
 		widgets->toggledValue(
 		) | rpl::filter([=](bool disabled) {
-			return (disabled != Core::App().settings().fork().widgetsDisabled());
+			return (disabled
+				!= Core::App().settings().fork().widgetsDisabled());
 		}) | rpl::on_next([=](bool disabled) {
 			Core::App().settings().fork().setWidgetsDisabled(disabled);
 			Core::App().saveSettingsDelayed();
@@ -63,26 +91,135 @@ void BuildWidgetsSection(
 }
 
 void BuildPasscodeSection(SectionBuilder &builder) {
-	builder.addDivider();
-	const auto autoSubmit = builder.addButton({
-		.id = u"ekzegram/auto_submit_passcode"_q,
-		.title = tr::lng_settings_auto_submit_passcode(),
-		.st = &st::settingsButtonNoIcon,
-		.toggled = rpl::single(
-			Core::App().settings().fork().autoSubmitPasscode()),
-		.keywords = { u"passcode"_q, u"lock"_q, u"auto"_q },
+	builder.addSkip();
+	builder.addSubsectionTitle({
+		.id = u"ekzegram/passcode"_q,
+		.title = tr::lng_settings_passcode_title(),
+		.keywords = { u"passcode"_q, u"lock"_q },
 	});
-	if (autoSubmit) {
-		autoSubmit->toggledValue(
-		) | rpl::filter([=](bool enabled) {
-			return (enabled
-				!= Core::App().settings().fork().autoSubmitPasscode());
-		}) | rpl::on_next([=](bool enabled) {
-			Core::App().settings().fork().setAutoSubmitPasscode(enabled);
-			Core::App().saveSettingsDelayed();
-		}, autoSubmit->lifetime());
-	}
+
+	AddForkToggle(
+		builder,
+		u"ekzegram/auto_submit_passcode"_q,
+		tr::lng_settings_auto_submit_passcode(),
+		[] { return Core::App().settings().fork().autoSubmitPasscode(); },
+		[](bool value) {
+			Core::App().settings().fork().setAutoSubmitPasscode(value);
+		},
+		{ u"passcode"_q, u"lock"_q, u"auto"_q });
 	builder.addDividerText(tr::lng_settings_auto_submit_passcode_about());
+}
+
+void BuildBehaviorSection(SectionBuilder &builder) {
+	builder.addSkip();
+	builder.addSubsectionTitle({
+		.id = u"ekzegram/behavior"_q,
+		.title = tr::lng_settings_behavior_title(),
+		.keywords = { u"behavior"_q },
+	});
+
+	AddForkToggle(
+		builder,
+		u"ekzegram/audio_fade"_q,
+		tr::lng_settings_audio_fade(),
+		[] { return Core::App().settings().fork().audioFade(); },
+		[](bool value) {
+			Core::App().settings().fork().setAudioFade(value);
+		},
+		{ u"audio"_q, u"fade"_q, u"sound"_q });
+
+	AddForkToggle(
+		builder,
+		u"ekzegram/last_seen_in_dialogs"_q,
+		tr::lng_settings_last_seen_in_dialogs(),
+		[] { return Core::App().settings().fork().lastSeenInDialogs(); },
+		[](bool value) {
+			Core::App().settings().fork().setLastSeenInDialogs(value);
+		},
+		{ u"last"_q, u"seen"_q, u"dialogs"_q });
+
+	AddForkToggle(
+		builder,
+		u"ekzegram/copy_login_code"_q,
+		tr::lng_settings_auto_copy_login_codes(),
+		[] { return Core::App().settings().fork().copyLoginCode(); },
+		[](bool value) {
+			Core::App().settings().fork().setCopyLoginCode(value);
+		},
+		{ u"login"_q, u"code"_q, u"copy"_q, u"clipboard"_q });
+	builder.addDividerText(tr::lng_settings_auto_copy_login_codes_about());
+}
+
+[[nodiscard]] QStringList CurrentEmojiSearchCodes() {
+	const auto chosen = Core::App().settings().fork().emojiSearchLanguages();
+	return chosen.split(',', Qt::SkipEmptyParts);
+}
+
+[[nodiscard]] QString EmojiSearchLanguagesLabel() {
+	const auto codes = CurrentEmojiSearchCodes();
+	if (codes.isEmpty()) {
+		return tr::lng_settings_emoji_search_languages_automatic(tr::now);
+	}
+	auto names = QStringList();
+	for (const auto &code : codes) {
+		names.push_back(Ui::LanguageName(LanguageId::FromName(code)));
+	}
+	return (names.size() > 2)
+		? tr::lng_languages_count(tr::now, lt_count, names.size())
+		: names.join(u", "_q);
+}
+
+void ShowEmojiSearchLanguagesBox(
+		not_null<Window::SessionController*> controller) {
+	auto selected = std::vector<LanguageId>();
+	for (const auto &code : CurrentEmojiSearchCodes()) {
+		const auto id = LanguageId::FromName(code);
+		if (id.known()) {
+			selected.push_back(id);
+		}
+	}
+	controller->show(Box(
+		Ui::ChooseLanguageBox,
+		tr::lng_settings_emoji_search_languages(),
+		[=](std::vector<LanguageId> &&list) {
+			auto codes = QStringList();
+			for (const auto &id : list) {
+				codes.push_back(id.twoLetterCode());
+			}
+			codes.sort();
+			Core::App().settings().fork().setEmojiSearchLanguages(
+				codes.join(','));
+			Core::App().saveSettingsDelayed();
+			Core::App().emojiKeywords().refresh();
+		},
+		std::move(selected),
+		true,
+		[](LanguageId) { return true; }));
+}
+
+void BuildEmojiSection(
+		SectionBuilder &builder,
+		not_null<Window::SessionController*> controller) {
+	builder.addSkip();
+	builder.addSubsectionTitle({
+		.id = u"ekzegram/emoji"_q,
+		.title = tr::lng_settings_emoji_search_title(),
+		.keywords = { u"emoji"_q, u"search"_q, u"languages"_q },
+	});
+
+	const auto row = builder.addButton({
+		.id = u"ekzegram/emoji_search_languages"_q,
+		.title = tr::lng_settings_emoji_search_languages(),
+		.st = &st::settingsButtonNoIcon,
+		.label = rpl::merge(
+			rpl::single(QString()),
+			Core::App().settings().fork().changes()
+				| rpl::map([] { return QString(); })
+		) | rpl::map([] { return EmojiSearchLanguagesLabel(); }),
+		.keywords = { u"emoji"_q, u"search"_q, u"languages"_q },
+		.onClick = [=] { ShowEmojiSearchLanguagesBox(controller); },
+	});
+	builder.addDividerText(tr::lng_settings_emoji_search_languages_about());
 }
 
 class Fork : public Section<Fork> {
@@ -107,6 +244,8 @@ const auto kMeta = BuildHelper({
 	const auto controller = builder.controller();
 	BuildWidgetsSection(builder, controller);
 	BuildPasscodeSection(builder);
+	BuildBehaviorSection(builder);
+	BuildEmojiSection(builder, controller);
 });
 
 const SectionBuildMethod kForkSection = kMeta.build;

@@ -9492,5 +9492,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 // fork-phase1-lang-anchor
 "lng_context_go_to_first_message" = "Go to the first message";
+"lng_settings_emoji_search_title" = "Emoji search";
+"lng_settings_emoji_search_languages" = "Emoji search languages";
+"lng_settings_emoji_search_languages_about" = "These languages are searched when you type emoji names like :smile. With none selected, your app and system languages are searched automatically.";
+"lng_settings_emoji_search_languages_automatic" = "Automatic";
 
 // Keys finished

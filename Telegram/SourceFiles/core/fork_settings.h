@@ -191,6 +191,13 @@ public:
 		assign(_markdownClipboardText, value, kMarkdownClipboardText);
 	}
 
+	[[nodiscard]] QString emojiSearchLanguages() const {
+		return _emojiSearchLanguages;
+	}
+	void setEmojiSearchLanguages(const QString &value) {
+		assign(_emojiSearchLanguages, value, kEmojiSearchLanguages);
+	}
+
 	[[nodiscard]] rpl::producer<> changes() const;
 
 private:
@@ -217,8 +224,9 @@ private:
 	static constexpr auto kArchivedStoriesAreHidden = "fork.archivedStoriesAreHidden";
 	static constexpr auto kHideFromBlockedUsers = "fork.hideFromBlockedUsers";
 	static constexpr auto kMarkdownClipboardText = "fork.markdownClipboardText";
+	static constexpr auto kEmojiSearchLanguages = "fork.emojiSearchLanguages";
 
-	static constexpr auto kAllKeys = std::array<std::string_view, 23>{
+	static constexpr auto kAllKeys = std::array<std::string_view, 24>{
 		kSquareUserpics,
 		kAudioFade,
 		kAutoSubmitPasscode,
@@ -242,6 +250,7 @@ private:
 		kArchivedStoriesAreHidden,
 		kHideFromBlockedUsers,
 		kMarkdownClipboardText,
+		kEmojiSearchLanguages,
 	};
 
 	void assign(bool &field, bool value, std::string_view key);
@@ -273,6 +282,7 @@ private:
 	bool _archivedStoriesAreHidden = false;
 	bool _hideFromBlockedUsers = false;
 	QString _markdownClipboardText;
+	QString _emojiSearchLanguages;
 
 	rpl::event_stream<> _changes;
 
