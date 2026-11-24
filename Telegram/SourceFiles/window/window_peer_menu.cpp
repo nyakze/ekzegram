@@ -82,6 +82,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/view/controls/history_view_forward_panel.h"
 #include "history/view/history_view_context_menu.h"
 #include "history/view/history_view_schedule_box.h"
+#include "history/view/history_view_scheduled_section.h"
 #include "iv/editor/iv_editor_session.h"
 #include "wallet/wallet_panel.h"
 #include "window/window_columns.h"
@@ -296,6 +297,22 @@ void PeerMenuAddMuteSubmenuAction(
 	}
 }
 
+Fn<void()> GoToFirstMessageHandler(
+		not_null<Window::SessionController*> controller,
+		not_null<PeerData*> peer) {
+	const auto weak = base::make_weak(controller.get());
+	const auto jump = [=](const QDate &date) {
+		const auto chat = peer->owner().history(peer->id);
+		const auto open = [=](not_null<PeerData*> peer, MsgId id) {
+			if (const auto strong = weak.get()) {
+				strong->showPeerHistory(peer, SectionShow::Way::Forward, id);
+			}
+		};
+		peer->session().api().resolveJumpToDate(chat, date, open);
+	};
+	return [=] { jump(QDate(2013, 8, 1)); };
+}
+
 class Filler {
 public:
 	Filler(
@@ -329,6 +346,8 @@ private:
 	void addStoryArchive();
 	void addNewWindow(bool addSeparator = true);
 	void addUngroup();
+	void addGoToFirstMessage();
+	void addGoToScheduled();
 	void addToggleFolder();
 	void addToggleUnreadMark();
 	void addToggleArchive();
@@ -1321,6 +1340,24 @@ void Filler::addManageTopic() {
 	}, &st::menuIconEdit);
 }
 
+void Filler::addGoToFirstMessage() {
+	_addAction(
+		tr::lng_context_go_to_first_message(tr::now),
+		GoToFirstMessageHandler(_controller, _peer),
+		&st::menuIconShowInChat);
+}
+
+void Filler::addGoToScheduled() {
+	if (!Data::CanSendAnything(_peer)) {
+		return;
+	}
+	const auto history = _peer->owner().historyLoaded(_peer);
+	_addAction(tr::lng_scheduled_messages(tr::now), [=, controller = _controller] {
+		controller->showSection(
+			std::make_shared<HistoryView::ScheduledMemento>(history));
+	}, &st::menuIconGroupLog);
+}
+
 void Filler::addManageChat() {
 	if (!EditPeerInfoBox::Available(_peer)) {
 		return;
@@ -2000,6 +2037,8 @@ void Filler::fillHistoryActions() {
 	addClearHistory();
 	addDeleteChat();
 	addLeaveChat();
+	addGoToFirstMessage();
+	addGoToScheduled();
 }
 
 void Filler::fillProfileActions() {
@@ -2032,6 +2071,8 @@ void Filler::fillProfileActions() {
 	addLeaveChat();
 	addDeleteContact();
 	addDeleteTopic();
+	addGoToFirstMessage();
+	addGoToScheduled();
 }
 
 void Filler::fillRepliesActions() {

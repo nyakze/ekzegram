@@ -9481,5 +9481,16 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_settings_disable_widgets_about" = "Widgets in bot messages are replaced with an unavailable placeholder. Mini Apps are not affected.";
 "lng_settings_auto_submit_passcode" = "Auto-submit local passcode";
 "lng_settings_auto_submit_passcode_about" = "Unlocks right after the full passcode is typed, without pressing Enter. While this is on, wrong guesses are not counted towards the passcode lockout, which weakens the lock against repeated guessing.";
+"lng_settings_passcode_title" = "Passcode";
+"lng_settings_behavior_title" = "Behavior";
+"lng_settings_audio_fade" = "Audio fade";
+"lng_settings_last_seen_in_dialogs" = "Show last seen time in list of dialogs";
+"lng_settings_auto_copy_login_codes" = "Auto-copy incoming login codes";
+"lng_settings_auto_copy_login_codes_about" = "Incoming login codes from Telegram are copied to the clipboard. Anyone with access to the clipboard can read them.";
+"lng_mute_all" = "Mute all";
+"lng_mute_all_sure" = "Are you sure you want to mute all chats in this folder?";
+
+// fork-phase1-lang-anchor
+"lng_context_go_to_first_message" = "Go to the first message";
 
 // Keys finished
