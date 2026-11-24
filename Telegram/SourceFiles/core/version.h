@@ -30,7 +30,7 @@ constexpr auto AppVersion = 7004006;
 // Must match the suffix of the release tag "v<upstream>-ekzegram<N>"; the
 // Make release workflow verifies the tag against this value, and the fork
 // update checker compares it with newer releases on GitHub.
-constexpr auto ForkBuildNumber = 3;
+constexpr auto ForkBuildNumber = 1; // TEST: pretend to be older than ekzegram2
 constexpr auto AppVersionStr = "7.4.6";
 constexpr auto AppBetaVersion = false;
 constexpr auto AppAlphaVersion = TDESKTOP_ALPHA_VERSION;
