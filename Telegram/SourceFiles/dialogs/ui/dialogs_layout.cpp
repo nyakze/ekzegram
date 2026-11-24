@@ -9,6 +9,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "base/options.h"
 #include "base/unixtime.h"
+#include "core/application.h"
+#include "core/core_settings.h"
 #include "core/ui_integration.h"
 #include "data/data_channel.h"
 #include "data/data_drafts.h"
@@ -100,6 +102,11 @@ void PaintRowTopRight(
 		: context.selected
 		? st::dialogsDateFgOver
 		: st::dialogsDateFg);
+
+	if (text == tr::lng_status_online(tr::now)) {
+		p.setPen(st::contactsStatusFgOnline);
+	}
+
 	p.drawText(
 		rectForName.left() + rectForName.width() + st::dialogsDateSkip,
 		rectForName.top() + st::semiboldFont->height - st::normalFont->descent,
@@ -891,6 +898,23 @@ void PaintRow(
 	if (sendStateIcon) {
 		rectForName.setWidth(rectForName.width() - st::dialogsSendStateSkip);
 		sendStateIcon->paint(p, rectForName.topLeft() + QPoint(rectForName.width(), 0), context.width);
+	}
+	if (from) {
+		if (from->isUser()
+			&& Core::App().settings().fork().lastSeenInDialogs()) {
+			auto lastSeen = Data::OnlineText(
+				from->asUser(),
+				base::unixtime::now());
+			static QSet<QString> ignoredStrings {
+				tr::lng_status_recently(tr::now),
+				tr::lng_status_bot(tr::now),
+				tr::lng_status_service_notifications(tr::now),
+				tr::lng_status_support(tr::now),
+			};
+			if (!ignoredStrings.contains(lastSeen)) {
+				PaintRowTopRight(p, lastSeen, rectForName, context);
+			}
+		}
 	}
 
 	p.setFont(st::semiboldFont);
