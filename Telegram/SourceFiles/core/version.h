@@ -18,7 +18,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #endif // TDESKTOP_ALLOW_CLOSED_ALPHA
 
 // used in Updater.cpp and Setup.iss for Windows
-constexpr auto AppId = "{53F49750-6209-4FBF-9CA8-7A333C87D1ED}"_cs;
+// FORK (ekzegram): fork-specific AppId GUID (was upstream's), so ekzegram
+// and official Telegram Desktop coexist cleanly (separate uninstall
+// entries, shortcuts and registry identity).
+constexpr auto AppId = "{4DAB0BDC-F97C-4158-9BF1-3C42796CDA4A}"_cs;
 constexpr auto AppNameOld = "Telegram Win (Unofficial)"_cs;
 constexpr auto AppName = "ekzegram"_cs;
 constexpr auto AppFile = "Telegram"_cs;

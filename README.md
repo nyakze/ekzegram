@@ -18,10 +18,11 @@ Everything else — including all upstream fixes and features — is stock.
 
 Prebuilt binaries are on the [Releases][releases] page:
 
-* `ekzegram-linux.tar.gz` — Linux (x86-64)
-* `ekzegram-windows.zip` — Windows (x64)
-* `ekzegram-macos-arm64.zip` — macOS (Apple Silicon)
-* `ekzegram-macos-x86_64.zip` — macOS (Intel)
+* `ekzegram-linux.tar.xz` — Linux (x86-64)
+* `ekzegram-windows.zip` — Windows (x64), portable (data beside the exe)
+* `ekzegram-setup.exe` — Windows (x64), installer (data in `%APPDATA%\ekzegram`)
+* `ekzegram-macos-arm64.dmg` — macOS (Apple Silicon)
+* `ekzegram-macos-x86_64.dmg` — macOS (Intel)
 
 The application is branded **ekzegram** (its own name and icon) and keeps its profile
 separately from official Telegram Desktop.
@@ -31,11 +32,29 @@ separately from official Telegram Desktop.
 * CI builds **Release** binaries for **Linux, Windows (x64) and macOS** on every push —
   see the [Actions][actions] page (artifacts are kept 30 days).
 * Builds use `DESKTOP_APP_DISABLE_AUTOUPDATE=ON`, since the official updater would
-  replace this fork with the official binary. There is no auto-update channel yet —
-  watch the repository to hear about new releases.
+  replace this fork with the official binary. Instead, portable installs show a
+  one-time in-app notice when a new release appears on GitHub (it opens the release
+  page — nothing is downloaded automatically); package-managed installs (pacman)
+  are updated by their package manager and get no notice.
 * API credentials are **not** included: building requires your own `api_id`/`api_hash`
   ([how to obtain][api_credentials]), passed via `TDESKTOP_API_ID`/`TDESKTOP_API_HASH`
   repository secrets (CI) or `~/.config/tdesktop-fork/api.conf` (local `build-fork.sh`).
+
+## Data locations & portable mode
+
+| Where you run ekzegram from | Your data (`tdata`) lives in |
+|---|---|
+| Windows portable zip | `tdata` next to `ekzegram.exe` |
+| Windows installer | `%APPDATA%\ekzegram\tdata` |
+| macOS (DMG) | `~/Library/Application Support/ekzegram` |
+| Linux (tarball or pacman) | `~/.local/share/ekzegram` |
+
+`tdata` holds your account session, drafts and secret chats — back it up, and don't
+keep it in a cloud-synced folder (sync corrupts it and uploads your chats). If the
+Windows portable folder isn't writable (e.g. Program Files), the app silently falls
+back to `%APPDATA%\ekzegram` instead. Advanced: `-workdir <dir>` or the
+`TDESKTOP_WORKDIR` environment variable overrides everything. Migrating between the
+Windows flavors is just moving `tdata` — see `packaging/windows/README.txt`.
 
 ## Building locally
 
@@ -75,16 +94,20 @@ The script reads `~/.config/tdesktop-fork/api.conf`, sets up the submodules and 
 
 ### Скачать
 
-Готовые бинарники — на странице [Releases][releases]: Linux (x86-64), Windows (x64),
-macOS (Apple Silicon и Intel).
+Готовые бинарники — на странице [Releases][releases]: Linux (x86-64), Windows (x64 —
+портативная zip и установщик `ekzegram-setup.exe`), macOS (Apple Silicon и Intel, DMG).
+Данные (`tdata`): Windows portable — рядом с `ekzegram.exe`; установщик —
+`%APPDATA%\ekzegram`; macOS — `~/Library/Application Support/ekzegram`; Linux —
+`~/.local/share/ekzegram`.
 
 ### Сборка
 
 * CI собирает **Release**-бинарники для **Linux, Windows (x64) и macOS** при каждом
   push — см. страницу [Actions][actions].
 * Сборки используют `DESKTOP_APP_DISABLE_AUTOUPDATE=ON`: официальный апдейтер заменил бы
-  бинарник форка на официальный. Канала автообновления нет — подпишитесь на репозиторий,
-  чтобы узнавать о новых релизах.
+  бинарник форка на официальный. Вместо этого портативные сборки показывают разовое
+  уведомление о новом релизе на GitHub (оно открывает страницу релиза, ничего не
+  скачивая); пакетные сборки обновляются пакетным менеджером.
 * API-креды **не включены**: для сборки нужны ваши `api_id`/`api_hash`
   ([как получить][api_credentials]) — через секреты `TDESKTOP_API_ID`/`TDESKTOP_API_HASH`
   (CI) или `~/.config/tdesktop-fork/api.conf` (локальная `build-fork.sh`).

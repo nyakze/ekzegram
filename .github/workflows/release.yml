@@ -3,9 +3,14 @@ name: Make release.
 # Packages the CI artifacts of a given commit into a GitHub release.
 # Artifacts never leave GitHub — no local downloading needed.
 # Usage: Actions -> Make release -> Run workflow (fill in source_sha and tag).
-# FORK (ekzegram): the tag must be "v<upstream>-ekzegram<N>" where <N> matches
-# ForkBuildNumber in Telegram/SourceFiles/core/version.h at source_sha (bump
-# it in the release commit); a step below verifies this.
+#
+# FORK (ekzegram):
+# - The tag must be "v<upstream>-ekzegram<N>" where <N> matches ForkBuildNumber
+#   in Telegram/SourceFiles/core/version.h at source_sha (bump it in the
+#   release commit); the Verify step below enforces this.
+# - Three jobs: the Windows installer (Inno Setup) and the macOS DMG images
+#   are built on their native runners, then the packaging job collects
+#   everything into one release.
 
 on:
   workflow_dispatch:
@@ -14,12 +19,12 @@ on:
         description: 'Commit SHA whose successful builds to package (e.g. 61a297df2a)'
         required: true
       tag:
-        description: 'Release tag following upstream versioning (e.g. v7.4.3)'
+        description: 'Release tag, e.g. v7.4.6-ekzegram2'
         required: true
       upstream_version:
         description: 'Upstream Telegram Desktop version this release is based on'
         required: false
-        default: '7.4.3'
+        default: '7.4.6'
       prerelease:
         description: 'Mark as pre-release (true/false)'
         required: false
@@ -30,8 +35,130 @@ permissions:
   actions: read
 
 jobs:
+  installer:
+    name: Windows installer.
+    runs-on: windows-latest
+    steps:
+      - name: Check out the installer script and the icon.
+        uses: actions/checkout@v4
+
+      - name: Download the Windows build artifact.
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SHA="${{ inputs.source_sha }}"
+          RUN=$(gh run list --repo "$GITHUB_REPOSITORY" --limit 100 --json databaseId,name,headSha,conclusion \
+            --jq "[.[] | select(.name==\"Windows.\" and (.headSha|startswith(\"$SHA\")) and .conclusion==\"success\") | .databaseId][0] // \"\"")
+          if [ -z "$RUN" ] || [ "$RUN" = "null" ]; then
+            echo "ERROR: no successful 'Windows.' run found for commit $SHA"
+            exit 1
+          fi
+          ARTIFACTS=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN/artifacts" \
+            --jq '[.artifacts[] | select(.name | startswith("ekzegram")) | .name] | .[]')
+          while IFS= read -r aname; do
+            [ -z "$aname" ] && continue
+            echo "  artifact: $aname"
+            gh run download "$RUN" --repo "$GITHUB_REPOSITORY" -n "$aname" -D "work/$aname"
+          done <<< "$ARTIFACTS"
+          BIN=$(find work -type f -name 'ekzegram.exe' | head -1)
+          test -n "$BIN"
+          mkdir release
+          cp "$BIN" release/ekzegram.exe
+
+      - name: Install Inno Setup.
+        shell: bash
+        run: choco install innosetup -y --no-progress
+
+      - name: Build the installer.
+        shell: bash
+        run: |
+          set -euo pipefail
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" \
+            /DMyAppVersion="${{ inputs.upstream_version }}" \
+            /DMyAppVersionFull="${TAG#v}" \
+            /DMyBuildTarget=win64 \
+            /DReleasePath="$(pwd -W)/release" \
+            /DMyOutputBaseFilename=ekzegram-setup \
+            Telegram/build/setup.iss
+        env:
+          TAG: ${{ inputs.tag }}
+          # The installer lands in OutputDir={#ReleasePath} as ekzegram-setup.exe.
+
+      - name: Verify and upload.
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f release/ekzegram-setup.exe
+          ls -lh release
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ekzegram-setup
+          path: release/ekzegram-setup.exe
+          retention-days: 30
+
+  dmg:
+    name: macOS DMG images.
+    runs-on: macos-latest
+    steps:
+      - name: Download the macOS build artifacts.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SHA="${{ inputs.source_sha }}"
+          RUN=$(gh run list --repo "$GITHUB_REPOSITORY" --limit 100 --json databaseId,name,headSha,conclusion \
+            --jq "[.[] | select(.name==\"MacOS.\" and (.headSha|startswith(\"$SHA\")) and .conclusion==\"success\") | .databaseId][0] // \"\"")
+          if [ -z "$RUN" ] || [ "$RUN" = "null" ]; then
+            echo "ERROR: no successful 'MacOS.' run found for commit $SHA"
+            exit 1
+          fi
+          ARTIFACTS=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN/artifacts" \
+            --jq '[.artifacts[] | select(.name | startswith("ekzegram")) | .name] | .[]')
+          while IFS= read -r aname; do
+            [ -z "$aname" ] && continue
+            echo "  artifact: $aname"
+            gh run download "$RUN" --repo "$GITHUB_REPOSITORY" -n "$aname" -D "work/$aname"
+          done <<< "$ARTIFACTS"
+          find work -maxdepth 3 | head -20
+
+      - name: Build the DMG images.
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          for ARCH in arm64 x86_64; do
+            # The uploaded artifact holds the bundle contents without the
+            # .app wrapper, so stage the folder around them.
+            SRC="work/ekzegram-macos-$ARCH"
+            test -f "$SRC/Contents/MacOS/ekzegram"
+            STAGE="stage-$ARCH"
+            mkdir -p "$STAGE"
+            mv "$SRC" "$STAGE/ekzegram.app"
+            BIN="$STAGE/ekzegram.app/Contents/MacOS/ekzegram"
+            file -b "$BIN" | grep -q "$ARCH" || { echo "ERROR: $ARCH package has a wrong binary"; exit 1; }
+            # The classic drag-to-Applications layout.
+            ln -s /Applications "$STAGE/Applications"
+            hdiutil create \
+              -volname "ekzegram" \
+              -srcfolder "$STAGE" \
+              -ov \
+              -format UDZO \
+              "dist/ekzegram-macos-$ARCH.dmg"
+            echo "$ARCH package verified and packed"
+          done
+          ls -lh dist
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ekzegram-macos-dmgs
+          path: dist/
+          retention-days: 30
+
   release:
+    name: Package and publish.
     runs-on: ubuntu-latest
+    needs: [installer, dmg]
     steps:
       - name: Verify tag against ForkBuildNumber.
         env:
@@ -57,6 +184,9 @@ jobs:
               ;;
           esac
 
+      - name: Check out the packaging files.
+        uses: actions/checkout@v4
+
       - name: Download build artifacts.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -64,7 +194,7 @@ jobs:
           set -euo pipefail
           SHA="${{ inputs.source_sha }}"
           mkdir -p work
-          for name in Linux. Windows. MacOS.; do
+          for name in Linux. Windows.; do
             RUN=$(gh run list --repo "$GITHUB_REPOSITORY" --limit 100 --json databaseId,name,headSha,conclusion \
               --jq "[.[] | select(.name==\"$name\" and (.headSha|startswith(\"$SHA\")) and .conclusion==\"success\") | .databaseId][0] // \"\"")
             if [ -z "$RUN" ] || [ "$RUN" = "null" ]; then
@@ -86,42 +216,43 @@ jobs:
           done
           find work -maxdepth 3 | head -40
 
+      - name: Download the installer and DMG artifacts.
+        uses: actions/download-artifact@v7
+        with:
+          path: dist
+          merge-multiple: true
+
       - name: Package artifacts.
         run: |
           set -euo pipefail
-          mkdir -p dist
           LINUX_BIN=$(find work/Linux. -type f -name 'ekzegram' | head -1)
           WIN_BIN=$(find work/Windows. -type f -name 'ekzegram.exe' | head -1)
           test -n "$LINUX_BIN" && test -n "$WIN_BIN"
 
           tar -cJf dist/ekzegram-linux.tar.xz -C "$(dirname "$LINUX_BIN")" ekzegram
-          (cd "$(dirname "$WIN_BIN")" && zip -q "$OLDPWD/dist/ekzegram-windows.zip" ekzegram.exe)
 
-          for ARCH in arm64 x86_64; do
-            # The uploaded artifact holds the bundle contents without the
-            # .app wrapper, so stage the folder around them.
-            SRC="work/MacOS./ekzegram-macos-$ARCH"
-            test -f "$SRC/Contents/MacOS/ekzegram"
-            STAGE="work/macos-$ARCH"
-            mkdir -p "$STAGE"
-            mv "$SRC" "$STAGE/ekzegram.app"
-            (cd "$STAGE" && zip -qr "$OLDPWD/dist/ekzegram-macos-$ARCH.zip" ekzegram.app)
-          done
+          # The portable Windows zip: the binary plus the portable README.
+          mkdir -p work/winzip
+          cp "$WIN_BIN" work/winzip/ekzegram.exe
+          cp packaging/windows/README.txt work/winzip/README.txt
+          (cd work/winzip && zip -q "$OLDPWD/dist/ekzegram-windows.zip" ekzegram.exe README.txt)
 
           (cd dist && sha256sum ekzegram-* > SHA256SUMS.txt)
           ls -lh dist
 
-      - name: Gather build facts for notes.
-        id: facts
+      - name: Verify the complete asset list.
         run: |
           set -euo pipefail
-          for ARCH in arm64 x86_64; do
-            BIN="work/macos-$ARCH/ekzegram.app/Contents/MacOS/ekzegram"
-            test -f "$BIN"
-            file -b "$BIN" | grep -q "$ARCH" || { echo "ERROR: $ARCH package has a wrong binary"; exit 1; }
-            echo "$ARCH package verified"
+          for f in \
+              ekzegram-linux.tar.xz \
+              ekzegram-windows.zip \
+              ekzegram-setup.exe \
+              ekzegram-macos-arm64.dmg \
+              ekzegram-macos-x86_64.dmg \
+              SHA256SUMS.txt; do
+            test -f "dist/$f" || { echo "ERROR: missing dist/$f"; exit 1; }
           done
-          echo "mac_arch=separate arm64 and x86_64 packages" >> "$GITHUB_OUTPUT"
+          echo "All release assets present."
 
       - name: Create release tag at the built commit.
         env:
@@ -150,27 +281,27 @@ jobs:
           cat > notes.md <<EOF
           ## ekzegram $VERSION
 
-          Unofficial fork of Telegram Desktop with JavaScript execution disabled in
-          message widgets (widgets render as a static "unsupported message" card).
-          Based on Telegram Desktop ${{ inputs.upstream_version }}.
+          Unofficial fork of Telegram Desktop: a personal, branded build that
+          tracks upstream closely and adds a small set of fixes. Based on
+          Telegram Desktop ${{ inputs.upstream_version }}.
 
-          ### Build configuration
+          ### Downloads
 
-          | Archive | Build | Notes |
+          | Asset | Build | Notes |
           |---|---|---|
-          | \`ekzegram-linux.tar.xz\` | Release | |
-          | \`ekzegram-windows.zip\` | Release | |
-          | \`ekzegram-macos-arm64.zip\` | Release | Apple Silicon |
-          | \`ekzegram-macos-x86_64.zip\` | Release | Intel (also runs on Apple Silicon via Rosetta) |
-
-          macOS binary: ${{ steps.facts.outputs.mac_arch }}
+          | \`ekzegram-linux.tar.xz\` | Release | Data in \`~/.local/share/ekzegram\` |
+          | \`ekzegram-windows.zip\` | Release | Portable: data in \`tdata\` beside the exe (see its README.txt) |
+          | \`ekzegram-setup.exe\` | Release | Windows installer: data in \`%APPDATA%\\ekzegram\` |
+          | \`ekzegram-macos-arm64.dmg\` | Release | Apple Silicon |
+          | \`ekzegram-macos-x86_64.dmg\` | Release | Intel (also runs on Apple Silicon via Rosetta) |
 
           ### Warnings
 
           * Binaries are **not code-signed**: Windows SmartScreen and macOS
             Gatekeeper will warn.
           * Auto-update is disabled: this build will never replace itself with the
-            official Telegram Desktop.
+            official Telegram Desktop. Portable installs get a "new release
+            available" notice in the app instead.
 
           ### Verify
 
@@ -178,16 +309,22 @@ jobs:
 
           ---
 
-          Неофициальный форк Telegram Desktop: виджеты в сообщениях не исполняют
-          JavaScript. Linux, Windows и macOS — Release-сборки. Бинарники не
-          подписаны. Подробности: README.md.
+          Неофициальный форк Telegram Desktop: персональная брендированная
+          сборка с набором небольших исправлений. Linux, Windows и macOS —
+          Release-сборки. Бинарники не подписаны. Подробности: README.md.
           EOF
           if [ "${{ inputs.prerelease }}" = "true" ]; then
             PRE="--prerelease"
           else
             PRE=""
           fi
-          gh release create "$TAG" dist/ekzegram-linux.tar.xz dist/ekzegram-windows.zip dist/ekzegram-macos-arm64.zip dist/ekzegram-macos-x86_64.zip dist/SHA256SUMS.txt \
+          gh release create "$TAG" \
+            dist/ekzegram-linux.tar.xz \
+            dist/ekzegram-windows.zip \
+            dist/ekzegram-setup.exe \
+            dist/ekzegram-macos-arm64.dmg \
+            dist/ekzegram-macos-x86_64.dmg \
+            dist/SHA256SUMS.txt \
             --repo "$GITHUB_REPOSITORY" \
             --title "ekzegram $VERSION" \
             --notes-file notes.md \
