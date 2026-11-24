@@ -545,6 +545,14 @@ void BuildSystemIntegrationSection(SectionBuilder &builder) {
 				settings->setCheckForUpdates(value);
 				Core::App().saveSettingsDelayed();
 			}, updateCheck->lifetime());
+
+			builder.addButton({
+				.id = u"advanced/check_for_updates_now"_q,
+				.title = tr::lng_settings_check_for_updates_now(),
+				.onClick = [=] {
+					Core::ForkUpdate::CheckNow();
+				},
+			});
 		}
 
 		const auto updateWorkmode = [=] {

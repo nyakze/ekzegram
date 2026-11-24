@@ -27,7 +27,15 @@ struct Info {
 // Schedules periodic checks, does nothing when !Available().
 void Start();
 
+// Performs a check immediately, ignoring the 24 hour throttle and the
+// once-per-version memory (so the result toast is shown again).
+void CheckNow();
+
 [[nodiscard]] rpl::producer<Info> found();
+
+// Fired when a manual CheckNow() completes without an update to install.
+// The bool is false when the check itself failed (network/server error).
+[[nodiscard]] rpl::producer<bool> checkedNoUpdate();
 
 } // namespace ForkUpdate
 } // namespace Core

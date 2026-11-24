@@ -424,6 +424,18 @@ void Application::run() {
 		}
 	}, _lifetime);
 
+	// FORK (ekzegram): the result of a manual update check without news.
+	Core::ForkUpdate::checkedNoUpdate(
+	) | rpl::on_next([=](bool ok) {
+		if (const auto window = activeWindow()) {
+			auto config = Ui::Toast::Config();
+			config.text = { ok
+				? u"ekzegram is up to date."_q
+				: u"Could not check for updates. Try again later."_q };
+			window->showToast(std::move(config));
+		}
+	}, _lifetime);
+
 	_domain->activeChanges(
 	) | rpl::on_next([=](not_null<Main::Account*> account) {
 		showAccount(account);
