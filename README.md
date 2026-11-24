@@ -72,6 +72,14 @@ The script reads `~/.config/tdesktop-fork/api.conf`, sets up the submodules and 
   in a small, reviewable commit stack (branding + CI) so rebases stay cheap.
 * Build your own `api_id`/`api_hash` — the well-known public ones cause login errors.
 
+## Credits
+
+* [Telegram Desktop][tdesktop] — the official client this fork is based on.
+* [Forkgram][forkgram] by [23rd][23rd] — several convenience features (fork
+  settings, widget kill switch, message stash, the message-deletion effect and
+  others) are adapted from Forkgram and remain under the same GPLv3 license.
+  Thanks to the Forkgram maintainers and contributors.
+
 ## Disclaimer
 
 * Unofficial. Not affiliated with or endorsed by Telegram. The name "Telegram" is used
@@ -122,9 +130,19 @@ The script reads `~/.config/tdesktop-fork/api.conf`, sets up the submodules and 
   SmartScreen / Gatekeeper при первом старте.
 * Распространяется на тех же условиях, что и апстрим: GPLv3 с исключением OpenSSL.
 
+### Благодарности
+
+* [Telegram Desktop][tdesktop] — официальный клиент, на котором основан форк.
+* [Forkgram][forkgram] от [23rd][23rd] — ряд удобных функций (fork-настройки,
+  отключение виджетов, stash сообщений, эффект удаления и другие) адаптированы из
+  Forkgram и распространяются по той же лицензии GPLv3. Спасибо авторам и
+  участникам Forkgram.
+
 ---
 
 [tdesktop]: https://github.com/telegramdesktop/tdesktop
+[forkgram]: https://github.com/forkgram/tdesktop
+[23rd]: https://github.com/23rd
 [releases]: https://github.com/nyakze/ekzegram/releases
 [actions]: https://github.com/nyakze/ekzegram/actions
 [api_credentials]: docs/api_credentials.md
