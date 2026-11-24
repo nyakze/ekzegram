@@ -23,6 +23,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/boxes/choose_language_box.h"
 #include "ui/boxes/confirm_box.h"
 #include "ui/ui_utility.h"
+#include "ui/widgets/buttons.h"
 #include "ui/wrap/vertical_layout.h"
 #include "styles/style_layers.h"
 #include "styles/style_menu_icons.h"
@@ -223,8 +224,8 @@ void BuildEmojiSection(
 			Core::App().settings().fork().changes()
 				| rpl::map([] { return QString(); })
 		) | rpl::map([] { return EmojiSearchLanguagesLabel(); }),
-		.keywords = { u"emoji"_q, u"search"_q, u"languages"_q },
 		.onClick = [=] { ShowEmojiSearchLanguagesBox(controller); },
+		.keywords = { u"emoji"_q, u"search"_q, u"languages"_q },
 	});
 	builder.addDividerText(tr::lng_settings_emoji_search_languages_about());
 }
@@ -289,10 +290,10 @@ void BuildMenuSection(
 		.id = u"ekzegram/markdown_clipboard"_q,
 		.title = tr::lng_settings_markdown_clipboard_text(),
 		.st = &st::settingsButtonNoIcon,
-		.keywords = { u"markdown"_q, u"clipboard"_q, u"save"_q },
 		.onClick = [=] {
 			controller->show(Menu::MakeMarkdownClipboardTextBox());
 		},
+		.keywords = { u"markdown"_q, u"clipboard"_q, u"save"_q },
 	});
 }
 
@@ -317,10 +318,10 @@ void BuildLinksSection(
 				? QString::number(Forkgram::LinkReplacements::EnabledCount())
 				: tr::lng_settings_cloud_password_off(tr::now);
 		}),
-		.keywords = { u"link"_q, u"replace"_q, u"paste"_q, u"regex"_q },
 		.onClick = [=] {
 			controller->show(Box(Forkgram::LinkReplacementsBox));
 		},
+		.keywords = { u"link"_q, u"replace"_q, u"paste"_q, u"regex"_q },
 	});
 
 	const auto uri = builder.addButton({
