@@ -16,6 +16,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "mtproto/sender.h"
 
 class History;
+class PeerData;
 
 namespace style {
 struct MultiSelect;
@@ -111,6 +112,11 @@ public:
 		Api::SendOptions,
 		Data::ForwardOptions)>;
 	using FilterCallback = Fn<bool(not_null<Data::Thread*>)>;
+	using AsCopyCallback = Fn<void(
+		std::vector<not_null<PeerData*>>&&,
+		TextWithTags&&,
+		bool emptyText,
+		TimeId scheduled)>;
 
 	[[nodiscard]] static auto DefaultForwardCountMessages(
 		not_null<History*> history,
@@ -127,6 +133,7 @@ public:
 		CountMessagesCallback countMessagesCallback;
 		SubmitCallback submitCallback;
 		FilterCallback filterCallback;
+		AsCopyCallback asCopyCallback;
 		Fn<void()> repostStoryCallback;
 		object_ptr<Ui::RpWidget> bottomWidget = { nullptr };
 		rpl::producer<QString> copyLinkText;

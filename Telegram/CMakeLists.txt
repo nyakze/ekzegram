@@ -132,6 +132,8 @@ nice_target_sources(Telegram ${src_loc}
 PRIVATE
     ${style_files}
 
+    api/api_as_copy.cpp
+    api/api_as_copy.h
     api/api_attached_stickers.cpp
     api/api_attached_stickers.h
     api/api_authorizations.cpp

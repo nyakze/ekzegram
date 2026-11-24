@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "boxes/share_box.h"
 
+#include "api/api_as_copy.h"
 #include "api/api_premium.h"
 #include "base/call_delayed.h"
 #include "base/random.h"
@@ -640,6 +641,20 @@ void ShareBox::showMenu(not_null<Ui::RpWidget*> parent) {
 }
 
 void ShareBox::createButtons() {
+	// FORK (ekzegram): share as copy, adapted from Forkgram.
+	const auto asCopyShare = [=](bool emptyText, TimeId scheduled) {
+		const auto selected = _inner->selected();
+		_descriptor.asCopyCallback(
+			ranges::views::all(
+				selected
+			) | ranges::views::transform(
+				&Data::Thread::peer
+			) | ranges::to_vector,
+			_comment->entity()->getTextWithAppliedMarkdown(),
+			emptyText,
+			scheduled);
+		closeBox();
+	};
 	clearButtons();
 	if (_hasSelected) {
 		const auto send = addButton(tr::lng_share_confirm(), [=] {
@@ -660,6 +675,28 @@ void ShareBox::createButtons() {
 		send->setText(PaidSendButtonText(
 			_starsToSend.value(),
 			tr::lng_share_confirm()));
+		if (_descriptor.asCopyCallback) {
+			addButton(tr::lng_share_as_copy(), [=] { asCopyShare(false, 0); });
+			addButton(
+				tr::lng_share_as_copy_no_text(),
+				[=] { asCopyShare(true, 0); });
+			addTopButton(st::historyScheduledToggle, [=] {
+				const auto st = _descriptor.st.scheduleBox
+					? *_descriptor.st.scheduleBox
+					: HistoryView::ScheduleBoxStyleArgs();
+				uiShow()->showBox(
+					HistoryView::PrepareScheduleBox(
+						this,
+						_descriptor.session,
+						sendMenuDetails(),
+						[=](Api::SendOptions options) {
+							asCopyShare(false, options.scheduled);
+						},
+						{},
+						HistoryView::DefaultScheduleTime(),
+						st));
+			});
+		}
 	} else if (_descriptor.copyCallback) {
 		addButton(_copyLinkText.value(), [=] { copyLink(); });
 	}
@@ -2301,6 +2338,51 @@ void FastShareMessage(
 				|| Data::CanSend(thread, ChatRestriction::SendInline))
 			&& (!isGame || !thread->peer()->isBroadcast());
 	};
+	// FORK (ekzegram): resend without the forward header, adapted from Forkgram.
+	auto asCopyCallback = [=](
+			std::vector<not_null<PeerData*>> &&result,
+			TextWithTags &&comment,
+			bool emptyText,
+			TimeId scheduled) {
+		auto toSend = Api::AsCopy::ToSend{
+			.peers = std::move(result),
+			.comment = std::move(comment),
+			.emptyText = emptyText,
+			.silent = QGuiApplication::keyboardModifiers().testFlag(
+				Qt::ControlModifier),
+			.scheduled = scheduled,
+		};
+		const auto toast = (toSend.silent && toSend.scheduled)
+			? tr::lng_share_as_copy_silent_scheduled(tr::now)
+			: toSend.silent
+			? tr::lng_share_as_copy_silent(tr::now)
+			: toSend.scheduled
+			? tr::lng_share_as_copy_scheduled(tr::now)
+			: QString();
+		if (!toast.isEmpty()) {
+			show->showToast(toast);
+		}
+		if (item->groupId()) {
+			Api::AsCopy::GuardedSendExistingAlbumFromItem(
+				item,
+				std::move(toSend));
+		} else if (const auto i = owner->message(msgIds[0])) {
+			Api::AsCopy::UpdateFileRef(
+				{ i },
+				[=, toSend = std::move(toSend)] {
+					Api::AsCopy::SendExistingMediaFromItem(
+						i,
+						base::duplicate(toSend));
+				},
+				[=](QString error) { show->showToast(error); });
+		}
+	};
+	const auto canResendAsCopy = ranges::all_of(items, [](auto i) {
+		return Api::AsCopy::CanResend(i);
+	});
+	auto asCopyFn = canResendAsCopy
+		? ShareBox::AsCopyCallback(std::move(asCopyCallback))
+		: ShareBox::AsCopyCallback();
 	auto copyLinkCallback = canCopyLink
 		? Fn<void()>(std::move(copyCallback))
 		: Fn<void()>();
@@ -2315,6 +2397,7 @@ void FastShareMessage(
 			history,
 			msgIds),
 		.filterCallback = std::move(filterCallback),
+		.asCopyCallback = std::move(asCopyFn),
 		.st = st,
 		.forwardOptions = {
 			.sendersCount = ItemsForwardSendersCount(items),
