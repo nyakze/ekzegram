@@ -40,6 +40,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "apiwrap.h"
 #include "media/audio/media_audio.h"
 #include "core/application.h"
+#include "core/core_settings.h"
 #include "wallet/wallet_address.h"
 #include "wallet/wallet_panel.h"
 #include "wallet/wallet_session.h"
@@ -98,6 +99,7 @@ namespace {
 constexpr auto kNotificationTextLimit = 255;
 constexpr auto kPinnedMessageTextLimit = 16;
 constexpr auto kMinLoginCode = 5;
+constexpr auto kLoginCodeLength = 5;
 constexpr auto kTonConnectRequestMaxDelay = 24 * 3600 * crl::time(1000);
 
 using ItemPreview = HistoryView::ItemPreview;
@@ -187,6 +189,26 @@ template <typename T>
 	}
 	text.entities.insert(i, { EntityType::Spoiler, codeStart, codeLength });
 	return text;
+}
+
+[[nodiscard]] QString ExtractLoginCode(const TextWithEntities &text) {
+	static const auto RegExp = QRegularExpression(
+		u"(?<![\\w\\-#])(\\d{"_q
+			+ QString::number(kLoginCodeLength)
+			+ u"})(?![\\w\\-])"_q);
+	const auto m = RegExp.match(text.text);
+	if (!m.hasMatch()) {
+		return QString();
+	}
+	const auto codeStart = int(m.capturedStart(1));
+	const auto codeEnd = codeStart + int(m.capturedLength(1));
+	for (const auto &entity : text.entities) {
+		if ((entity.offset() < codeEnd)
+			&& (entity.offset() + entity.length() > codeStart)) {
+			return QString(); // Entities should not intersect code.
+		}
+	}
+	return m.captured(1);
 }
 
 [[nodiscard]] bool HasNotEmojiAndSpaces(const QString &text) {
@@ -682,6 +704,16 @@ HistoryItem::HistoryItem(
 	if (const auto until = data.vreport_delivery_until_date()) {
 		if (base::unixtime::now() < TimeId(until->v)) {
 			history->owner().histories().reportDelivery(this);
+		}
+	}
+	if (!out()
+		&& (history->peer->isNotificationsUser()
+			|| history->peer->isVerifyCodes())
+		&& (base::unixtime::now() - date() < 60 * 1)
+		&& (Core::App().settings().fork().copyLoginCode())) {
+		const auto code = ExtractLoginCode(_text);
+		if (!code.isEmpty()) {
+			TextUtilities::SetClipboardText({ code });
 		}
 	}
 }
