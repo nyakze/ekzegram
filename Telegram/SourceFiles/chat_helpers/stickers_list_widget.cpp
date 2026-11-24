@@ -94,6 +94,8 @@ base::options::toggle OptionUnlimitedRecentStickers({
 	.id = kOptionUnlimitedRecentStickers,
 	.name = "Unlimited recent stickers",
 	.description = "Display as much recent stickers as the server provides",
+	// FORK (ekzegram): on by default.
+	.defaultValue = true,
 });
 
 [[nodiscard]] bool SetInMyList(Data::StickersSetFlags flags) {
