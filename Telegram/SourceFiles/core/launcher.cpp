@@ -344,9 +344,12 @@ void Launcher::init() {
 	initQtMessageLogging();
 
 	// FORK (ekzegram): the application name drives the default workdir
-	// (e.g. ~/.local/share/ekzegram) and the WM class on Linux.
+	// (e.g. ~/.local/share/ekzegram) and the WM class on Linux. Deliberately
+	// NOT calling setApplicationDisplayName: Qt/the window manager would then
+	// append " — ekzegram" to chat window titles, while official Telegram
+	// Desktop shows just the chat name. setApplicationName alone is enough for
+	// workdir / WM-class identification.
 	QApplication::setApplicationName(u"ekzegram"_q);
-	QApplication::setApplicationDisplayName(u"ekzegram"_q);
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	// fallback session management is useless for tdesktop since it doesn't have
