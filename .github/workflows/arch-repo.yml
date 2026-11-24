@@ -1,7 +1,11 @@
 # Builds the ekzegram-bin pacman package from the prebuilt release artifact
-# and publishes it to this repository's gh-pages branch as a pacman repo:
+# and publishes it to the dedicated 'arch-repo' release as static assets,
+# which double as a pacman repository:
 #
-#   https://nyakze.github.io/ekzegram/ekzegram/os/x86_64
+#   https://github.com/nyakze/ekzegram/releases/download/arch-repo
+#
+# (Release assets allow up to 2 GB per file; git blocks files over 100 MB,
+# so a gh-pages branch is not an option for the 120+ MB package.)
 #
 # Consumers add the [ekzegram] repo to pacman.conf and then plain
 # `pacman -Syu` / `paru` updates ekzegram like any other package.
@@ -48,48 +52,51 @@ jobs:
           ver="${ver//-/_}"
           echo "Building version ${ver} (tag ${TAG})"
           sed -i "s/^pkgver=.*/pkgver=${ver}/" packaging/arch/PKGBUILD
+          # Old releases shipped ekzegram-linux.tar.gz, newer ones .tar.xz.
+          if ! curl -sfIL "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/ekzegram-linux.tar.xz" -o /dev/null; then
+            echo "No .tar.xz asset for ${TAG}; falling back to .tar.gz"
+            sed -i "s/^_ext=.*/_ext=gz/" packaging/arch/PKGBUILD
+          fi
 
       - name: Build package
         working-directory: packaging/arch
         # --nodeps: runtime deps are not needed to repack the binary.
         run: runuser -u builder -- makepkg -f --noconfirm --nodeps
 
-      - name: Publish pacman repo to gh-pages
+      - name: Publish pacman repo to the arch-repo release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           pkgfile="$(basename "$(ls packaging/arch/ekzegram-bin-*.pkg.tar.zst)")"
           echo "Publishing ${pkgfile}"
 
-          mkdir -p repo/ekzegram/os/x86_64
-          cp "packaging/arch/${pkgfile}" repo/ekzegram/os/x86_64/
-
-          pushd repo/ekzegram/os/x86_64
+          workdir="$(mktemp -d)"
+          cp "packaging/arch/${pkgfile}" "$workdir/"
+          pushd "$workdir"
           repo-add ekzegram.db.tar.gz "${pkgfile}"
-          # GitHub Pages does not serve symlinks reliably; use real files.
-          cp -f ekzegram.db.tar.gz ekzegram.db
-          cp -f ekzegram.files.tar.gz ekzegram.files
+          # Real files, not the symlinks repo-add leaves behind.
+          rm -f ekzegram.db ekzegram.files
+          cp ekzegram.db.tar.gz ekzegram.db
+          cp ekzegram.files.tar.gz ekzegram.files
           popd
 
-          touch repo/.nojekyll
-          cat > repo/index.html <<'EOF'
-          <!doctype html>
-          <meta charset="utf-8">
-          <title>ekzegram pacman repo</title>
-          <p>ekzegram pacman repository. Add to <code>pacman.conf</code>:</p>
-          <pre>[ekzegram]
-          SigLevel = Never
-          Server = https://nyakze.github.io/ekzegram/ekzegram/os/x86_64</pre>
-          EOF
+          # The 'arch-repo' release doubles as a static file host for the
+          # pacman repo: release assets allow up to 2 GB per file, while git
+          # blocks files over 100 MB (so gh-pages is not an option).
+          if ! gh release view arch-repo >/dev/null 2>&1; then
+            gh release create arch-repo \
+              --prerelease \
+              --title "Arch pacman repo" \
+              --notes "Static pacman repository for ekzegram-bin. Add to pacman.conf: [ekzegram] / SigLevel = Never / Server = https://github.com/${GITHUB_REPOSITORY}/releases/download/arch-repo — updated automatically by the arch-repo workflow on each release. Do not delete."
+          fi
 
-          cd repo
-          git init -b gh-pages
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "ekzegram repo ${GITHUB_REF_NAME}"
-          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          # Orphan single-commit history so the repo never accumulates
-          # hundreds of megabytes of old packages.
-          git push -f origin gh-pages
+          # Drop previous repo assets so only the latest is served.
+          gh release view arch-repo --json assets --jq '.assets[].name' \
+            | { grep -E '\.(pkg\.tar\.zst|db|db\.tar\.gz|files|files\.tar\.gz)$' || true; } \
+            | while read -r asset; do gh release delete-asset arch-repo "$asset" --yes; done
+
+          gh release upload arch-repo --clobber \
+            "$workdir/${pkgfile}" \
+            "$workdir/ekzegram.db" "$workdir/ekzegram.db.tar.gz" \
+            "$workdir/ekzegram.files" "$workdir/ekzegram.files.tar.gz"

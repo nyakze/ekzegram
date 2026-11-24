@@ -1,7 +1,7 @@
 # Maintainer: nyakze <https://github.com/nyakze>
 #
 # Repackages the prebuilt Linux binary published on the fork's GitHub
-# Releases (ekzegram-linux.tar.gz). No compilation of tdesktop needed.
+# Releases (ekzegram-linux.tar.xz). No compilation of tdesktop needed.
 #
 # pkgver mirrors the release tag: v7.4.6-ekzegram1 -> 7.4.6_ekzegram1
 # (pacman pkgver may not contain hyphens). When building manually for a new
@@ -28,9 +28,14 @@ conflicts=('ekzegram')
 # The release binary is already stripped and huge; never strip or split debug.
 options=('!strip' '!debug')
 
+# Release artifact compression: newer release.yml publishes
+# ekzegram-linux.tar.xz; releases before that used .tar.gz. The arch-repo
+# workflow rewrites this to 'gz' automatically for old tags.
+_ext=xz
+
 # v7.4.6_ekzegram1 -> v7.4.6-ekzegram1
 _tag="v${pkgver//_/-}"
-source=("${pkgname}-${pkgver}.tar.gz::https://github.com/nyakze/ekzegram/releases/download/${_tag}/ekzegram-linux.tar.gz"
+source=("${pkgname}-${pkgver}.tar.${_ext}::https://github.com/nyakze/ekzegram/releases/download/${_tag}/ekzegram-linux.tar.${_ext}"
         "SHA256SUMS.txt::https://github.com/nyakze/ekzegram/releases/download/${_tag}/SHA256SUMS.txt"
         "ekzegram.desktop"
         "ekzegram-16.png"
@@ -57,12 +62,12 @@ prepare() {
   # Verify the release tarball against the release's own SHA256SUMS.txt.
   cd "$srcdir"
   local expected
-  expected="$(awk '/  ekzegram-linux\.tar\.gz$/ {print $1}' SHA256SUMS.txt)"
+  expected="$(awk '/  ekzegram-linux\.tar\.(xz|gz)$/ {print $1}' SHA256SUMS.txt)"
   if [[ -z "$expected" ]]; then
-    echo "ERROR: ekzegram-linux.tar.gz not listed in SHA256SUMS.txt" >&2
+    echo "ERROR: ekzegram-linux tarball not listed in SHA256SUMS.txt" >&2
     return 1
   fi
-  echo "${expected}  ${pkgname}-${pkgver}.tar.gz" | sha256sum -c -
+  echo "${expected}  ${pkgname}-${pkgver}.tar.${_ext}" | sha256sum -c -
 }
 
 package() {
