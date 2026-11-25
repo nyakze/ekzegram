@@ -574,7 +574,7 @@ QStringList EmojiKeywords::LoadedLanguages() {
 }
 
 void EmojiKeywords::ClearLoadedLanguages() {
-	const auto dir = QDir(internal::CacheFileFolder() + u"/keywords"_q);
+	auto dir = QDir(internal::CacheFileFolder() + u"/keywords"_q);
 	for (const auto &name : dir.entryList(QDir::Files)) {
 		dir.remove(name);
 	}
