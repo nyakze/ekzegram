@@ -410,4 +410,8 @@ void Fork::setupContent() {
 	Ui::ResizeFitChild(this, content);
 }
 
+Type ForkId() {
+	return Fork::Id();
+}
+
 } // namespace Settings
