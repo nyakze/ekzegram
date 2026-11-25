@@ -527,33 +527,7 @@ void BuildSystemIntegrationSection(SectionBuilder &builder) {
 			}, monochrome->lifetime());
 		}
 
-		// FORK (ekzegram): portable installs check GitHub for new releases.
-		const auto updateCheck = Core::ForkUpdate::Available()
-			? builder.addCheckbox({
-				.id = u"advanced/check_for_updates"_q,
-				.title = tr::lng_settings_check_for_updates(),
-				.checked = settings->checkForUpdates(),
-				.keywords = { u"update"_q, u"check"_q, u"release"_q },
-			})
-			: nullptr;
-
-		if (updateCheck) {
-			updateCheck->checkedChanges(
-			) | rpl::filter([=](bool value) {
-				return (value != settings->checkForUpdates());
-			}) | rpl::on_next([=](bool value) {
-				settings->setCheckForUpdates(value);
-				Core::App().saveSettingsDelayed();
-			}, updateCheck->lifetime());
-
-			builder.addButton({
-				.id = u"advanced/check_for_updates_now"_q,
-				.title = tr::lng_settings_check_for_updates_now(),
-				.onClick = [=] {
-					Core::ForkUpdate::CheckNow();
-				},
-			});
-		}
+		// FORK (ekzegram): moved to the "Version and updates" section.
 
 		const auto updateWorkmode = [=] {
 			const auto newMode = (tray && tray->checked())
@@ -1145,6 +1119,69 @@ void SubscribeToUpdateChecker(
 	}, options->lifetime());
 }
 
+// FORK (ekzegram): update checks against GitHub releases, modeled on the
+// upstream "Version and updates" section.
+void BuildForkUpdateSection(SectionBuilder &builder) {
+	if (!Core::ForkUpdate::Available()) {
+		return;
+	}
+	builder.addSkip();
+	builder.addSubsectionTitle({
+		.id = u"advanced/version"_q,
+		.title = tr::lng_settings_version_info(),
+		.keywords = { u"version"_q, u"update"_q, u"check"_q, u"beta"_q },
+	});
+
+	const auto settings = &Core::App().settings();
+	const auto autoCheck = builder.addButton({
+		.id = u"advanced/check_for_updates"_q,
+		.title = tr::lng_settings_update_automatically(),
+		.st = &st::settingsButtonNoIcon,
+		.label = rpl::single(tr::lng_settings_current_version(
+			tr::now,
+			lt_version,
+			currentVersionText())),
+		.toggled = rpl::single(settings->checkForUpdates()),
+		.keywords = { u"update"_q, u"check"_q, u"release"_q },
+	});
+	if (autoCheck) {
+		autoCheck->toggledValue(
+		) | rpl::filter([=](bool value) {
+			return (value != settings->checkForUpdates());
+		}) | rpl::on_next([=](bool value) {
+			settings->setCheckForUpdates(value);
+			Core::App().saveSettingsDelayed();
+		}, autoCheck->lifetime());
+	}
+
+	const auto beta = builder.addButton({
+		.id = u"advanced/install_beta"_q,
+		.title = tr::lng_settings_install_beta(),
+		.st = &st::settingsButtonNoIcon,
+		.toggled = rpl::single(cInstallBetaVersion()),
+		.keywords = { u"beta"_q, u"update"_q, u"version"_q },
+	});
+	if (beta) {
+		beta->toggledValue(
+		) | rpl::filter([=](bool value) {
+			return (value != cInstallBetaVersion());
+		}) | rpl::on_next([=](bool value) {
+			cSetInstallBetaVersion(value);
+			Core::App().saveSettingsDelayed();
+		}, beta->lifetime());
+	}
+
+	builder.addButton({
+		.id = u"advanced/check_for_updates_now"_q,
+		.title = tr::lng_settings_check_now(),
+		.st = &st::settingsButtonNoIcon,
+		.onClick = [=] {
+			Core::ForkUpdate::CheckNow();
+		},
+		.keywords = { u"check"_q, u"update"_q, u"now"_q },
+	});
+}
+
 void BuildUpdateSection(SectionBuilder &builder, bool atTop) {
 	if (!HasUpdate()) {
 		return;
@@ -1392,7 +1429,8 @@ const auto kMeta = BuildHelper({
 	const auto autoUpdate = cAutoUpdate();
 
 	if (!autoUpdate) {
-		BuildUpdateSection(builder, true);
+		// FORK (ekzegram): GitHub release checks replace the official updater.
+		BuildForkUpdateSection(builder);
 	}
 	BuildDataStorageSection(builder);
 	BuildAutoDownloadSection(builder);

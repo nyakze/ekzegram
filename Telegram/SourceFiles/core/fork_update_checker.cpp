@@ -10,9 +10,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/application.h"
 #include "core/core_settings.h"
 #include "core/version.h"
+#include "settings.h"
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDateTime>
+#include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QRegularExpression>
@@ -146,9 +148,23 @@ void Checker::checkNow() {
 	perform(true);
 }
 
+[[nodiscard]] QJsonObject FirstListedRelease(const QJsonDocument &document) {
+	if (document.isArray()) {
+		for (const auto &value : document.array()) {
+			const auto object = value.toObject();
+			if (!object.value(u"draft"_q).toBool()) {
+				return object;
+			}
+		}
+		return {};
+	}
+	return document.object();
+}
+
 void Checker::perform(bool manual) {
-	auto request = QNetworkRequest(
-		QUrl(u"https://api.github.com/repos/nyakze/ekzegram/releases/latest"_q));
+	auto request = QNetworkRequest(QUrl(cInstallBetaVersion()
+		? u"https://api.github.com/repos/nyakze/ekzegram/releases?per_page=10"_q
+		: u"https://api.github.com/repos/nyakze/ekzegram/releases/latest"_q));
 	request.setRawHeader("User-Agent", "ekzegram-update-check");
 	request.setRawHeader("Accept", "application/vnd.github+json");
 	const auto reply = _manager.get(request);
@@ -166,7 +182,8 @@ void Checker::perform(bool manual) {
 			Core::App().saveSettingsDelayed();
 			return;
 		}
-		const auto object = QJsonDocument::fromJson(data).object();
+		const auto document = QJsonDocument::fromJson(data);
+		const auto object = FirstListedRelease(document);
 		const auto tag = object.value(u"tag_name"_q).toString();
 		const auto parsed = ParseTag(tag);
 		if (parsed && NewerThanCurrent(*parsed)) {
