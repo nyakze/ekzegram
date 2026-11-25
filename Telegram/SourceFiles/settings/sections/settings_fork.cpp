@@ -215,7 +215,7 @@ void BuildEmojiSection(
 		.keywords = { u"emoji"_q, u"search"_q, u"languages"_q },
 	});
 
-	const auto row = builder.addButton({
+	builder.addButton({
 		.id = u"ekzegram/emoji_search_languages"_q,
 		.title = tr::lng_settings_emoji_search_languages(),
 		.st = &st::settingsButtonNoIcon,
@@ -256,18 +256,18 @@ void BuildMenuSection(
 			if (enabled == state->current()) {
 				return;
 			} else if (!enabled) {
-				state->set(false);
+				*state = false;
 				Core::App().settings().fork().setSearchSelected(false);
 				Core::App().saveSettingsDelayed();
 				return;
 			}
-			state->set(true);
+			*state = true;
 			controller->show(
 				Fork::MakeSearchEngineBox([=](bool ok) {
 					Core::App().settings().fork().setSearchSelected(ok);
 					Core::App().saveSettingsDelayed();
 					if (!ok) {
-						state->set(false);
+						*state = false;
 					}
 				}),
 				Ui::LayerOption::KeepOther);
@@ -286,7 +286,7 @@ void BuildMenuSection(
 		},
 		{ u"media"_q, u"remember"_q, u"menu"_q });
 
-	const auto markdown = builder.addButton({
+	builder.addButton({
 		.id = u"ekzegram/markdown_clipboard"_q,
 		.title = tr::lng_settings_markdown_clipboard_text(),
 		.st = &st::settingsButtonNoIcon,
@@ -307,7 +307,7 @@ void BuildLinksSection(
 		.keywords = { u"links"_q, u"paste"_q, u"uri"_q },
 	});
 
-	const auto replacements = builder.addButton({
+	builder.addButton({
 		.id = u"ekzegram/link_replacements"_q,
 		.title = tr::lng_fork_link_replacements(),
 		.st = &st::settingsButtonNoIcon,
@@ -339,18 +339,18 @@ void BuildLinksSection(
 			if (enabled == state->current()) {
 				return;
 			} else if (!enabled) {
-				state->set(false);
+				*state = false;
 				Core::App().settings().fork().setAskUriScheme(false);
 				Core::App().saveSettingsDelayed();
 				return;
 			}
-			state->set(true);
+			*state = true;
 			controller->show(
 				Box(Forkgram::UriSchemeBox, [=](bool ok) {
 					Core::App().settings().fork().setAskUriScheme(ok);
 					Core::App().saveSettingsDelayed();
 					if (!ok) {
-						state->set(false);
+						*state = false;
 					}
 				}),
 				Ui::LayerOption::KeepOther);
