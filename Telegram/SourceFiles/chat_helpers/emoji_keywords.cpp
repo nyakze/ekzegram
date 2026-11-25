@@ -569,6 +569,17 @@ void EmojiKeywords::refresh() {
 	}
 }
 
+QStringList EmojiKeywords::LoadedLanguages() {
+	return CachedKeywordLanguageIds();
+}
+
+void EmojiKeywords::ClearLoadedLanguages() {
+	const auto dir = QDir(internal::CacheFileFolder() + u"/keywords"_q);
+	for (const auto &name : dir.entryList(QDir::Files)) {
+		dir.remove(name);
+	}
+}
+
 std::vector<QString> EmojiKeywords::languages() {
 	if (!_api) {
 		return {};

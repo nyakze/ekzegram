@@ -48,6 +48,10 @@ public:
 		bool exact = false) const;
 	[[nodiscard]] int maxQueryLength() const;
 
+	// FORK (ekzegram): visibility into the downloaded keyword packs.
+	[[nodiscard]] static QStringList LoadedLanguages();
+	static void ClearLoadedLanguages();
+
 private:
 	class LangPack;
 

@@ -789,6 +789,8 @@ void Instance::applyForkOverrides() {
 		{ "lng_settings_emoji_search_languages", "Языки поиска эмодзи" },
 		{ "lng_settings_emoji_search_languages_about", "На этих языках ищутся названия эмодзи (например :smile). Если ничего не выбрано, автоматически используются языки приложения и системы." },
 		{ "lng_settings_emoji_search_languages_automatic", "Автоматически" },
+		{ "lng_settings_emoji_search_languages_clear", "Очистить загруженные языки эмодзи" },
+		{ "lng_settings_emoji_search_languages_cleared", "Кеш языков эмодзи очищен." },
 		{ "lng_share_as_copy", "Как копию" },
 		{ "lng_share_as_copy_no_text", "Без текста" },
 		{ "lng_share_as_copy_silent_scheduled", "Запланировано без уведомления." },

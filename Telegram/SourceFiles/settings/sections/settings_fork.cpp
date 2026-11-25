@@ -166,7 +166,11 @@ void BuildBehaviorSection(SectionBuilder &builder) {
 [[nodiscard]] QString EmojiSearchLanguagesLabel() {
 	const auto codes = CurrentEmojiSearchCodes();
 	if (codes.isEmpty()) {
-		return tr::lng_settings_emoji_search_languages_automatic(tr::now);
+		const auto loaded = ChatHelpers::EmojiKeywords::LoadedLanguages();
+		return loaded.isEmpty()
+			? tr::lng_settings_emoji_search_languages_automatic(tr::now)
+			: (tr::lng_settings_emoji_search_languages_automatic(tr::now)
+				+ u" ("_q + loaded.join(u", "_q) + u")"_q);
 	}
 	auto names = QStringList();
 	for (const auto &code : codes) {
@@ -215,6 +219,7 @@ void BuildEmojiSection(
 		.keywords = { u"emoji"_q, u"search"_q, u"languages"_q },
 	});
 
+	const auto cleared = std::make_shared<rpl::event_stream<>>();
 	builder.addButton({
 		.id = u"ekzegram/emoji_search_languages"_q,
 		.title = tr::lng_settings_emoji_search_languages(),
@@ -222,10 +227,24 @@ void BuildEmojiSection(
 		.label = rpl::merge(
 			rpl::single(QString()),
 			Core::App().settings().fork().changes()
-				| rpl::map([] { return QString(); })
+				| rpl::map([] { return QString(); }),
+			cleared->events() | rpl::map([] { return QString(); })
 		) | rpl::map([] { return EmojiSearchLanguagesLabel(); }),
 		.onClick = [=] { ShowEmojiSearchLanguagesBox(controller); },
 		.keywords = { u"emoji"_q, u"search"_q, u"languages"_q },
+	});
+	builder.addButton({
+		.id = u"ekzegram/emoji_search_languages_clear"_q,
+		.title = tr::lng_settings_emoji_search_languages_clear(),
+		.st = &st::settingsButtonNoIcon,
+		.onClick = [=] {
+			ChatHelpers::EmojiKeywords::ClearLoadedLanguages();
+			Core::App().emojiKeywords().refresh();
+			cleared->fire({});
+			controller->showToast(
+				tr::lng_settings_emoji_search_languages_cleared(tr::now));
+		},
+		.keywords = { u"emoji"_q, u"cache"_q, u"clear"_q },
 	});
 	builder.addDividerText(tr::lng_settings_emoji_search_languages_about());
 }

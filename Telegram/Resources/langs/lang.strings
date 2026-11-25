@@ -9531,5 +9531,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_settings_emoji_search_languages" = "Emoji search languages";
 "lng_settings_emoji_search_languages_about" = "These languages are searched when you type emoji names like :smile. With none selected, your app and system languages are searched automatically.";
 "lng_settings_emoji_search_languages_automatic" = "Automatic";
+"lng_settings_emoji_search_languages_clear" = "Clear downloaded emoji languages";
+"lng_settings_emoji_search_languages_cleared" = "Emoji language cache cleared.";
 
 // Keys finished
