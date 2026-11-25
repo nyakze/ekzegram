@@ -1428,9 +1428,10 @@ const auto kMeta = BuildHelper({
 }, [](SectionBuilder &builder) {
 	const auto autoUpdate = cAutoUpdate();
 
+	// FORK (ekzegram): GitHub release checks replace the official updater.
+	BuildForkUpdateSection(builder);
 	if (!autoUpdate) {
-		// FORK (ekzegram): GitHub release checks replace the official updater.
-		BuildForkUpdateSection(builder);
+		BuildUpdateSection(builder, true);
 	}
 	BuildDataStorageSection(builder);
 	BuildAutoDownloadSection(builder);
