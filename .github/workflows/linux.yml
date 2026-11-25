@@ -190,6 +190,7 @@ jobs:
           -D TDESKTOP_API_HASH=${{ secrets.TDESKTOP_API_HASH }} \
           -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON \
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF \
+          -D TDESKTOP_WIDGET_HELPER_BESIDE=ON \
           $DEFINE
 
       - name: Save Telegram Desktop cache.

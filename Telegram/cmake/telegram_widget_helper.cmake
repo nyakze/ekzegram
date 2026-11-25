@@ -198,7 +198,10 @@ else()
     if (DESKTOP_APP_USE_PACKAGED)
         include(GNUInstallDirs)
         set(widget_helper_destination "${CMAKE_INSTALL_BINDIR}/TelegramHelpers")
-        if (NOT DESKTOP_APP_SPECIAL_TARGET)
+        # FORK (ekzegram): portable bundles keep the helper beside the binary,
+        # the distro libexec layout would place it outside the extracted folder.
+        if (NOT DESKTOP_APP_SPECIAL_TARGET
+            AND NOT TDESKTOP_WIDGET_HELPER_BESIDE)
             file(RELATIVE_PATH widget_helper_folder
                 "${CMAKE_INSTALL_FULL_BINDIR}"
                 "${CMAKE_INSTALL_FULL_LIBEXECDIR}/TelegramDesktop")
