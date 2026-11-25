@@ -232,6 +232,7 @@ jobs:
           cd out/Release
           mkdir artifact
           mv ekzegram artifact/
+          mv TelegramHelpers artifact/
           mv Updater artifact/ 2>/dev/null || true
       - uses: actions/upload-artifact@v7
         if: env.UPLOAD_ARTIFACT == 'true'
