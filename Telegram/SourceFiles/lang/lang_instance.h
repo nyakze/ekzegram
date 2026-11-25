@@ -110,6 +110,8 @@ private:
 
 	void applyDifferenceToMe(const MTPDlangPackDifference &difference);
 	void applyValue(const QByteArray &key, const QByteArray &value);
+	// FORK (ekzegram): Russian values for fork-only phrases, missing in cloud language packs.
+	void applyForkOverrides();
 	void resetValue(const QByteArray &key);
 	void reset(const Language &language);
 	void fillFromCustomContent(

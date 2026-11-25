@@ -548,6 +548,7 @@ void Instance::fillFromSerialized(
 	}
 	updatePluralRules();
 	updateChoosingStickerReplacement();
+	applyForkOverrides();
 
 	_idChanges.fire_copy(_id);
 }
@@ -561,6 +562,7 @@ void Instance::loadFromContent(const QByteArray &content) {
 	} else if (!loader.warnings().isEmpty()) {
 		LOG(("Lang load warnings: %1").arg(loader.warnings()));
 	}
+	applyForkOverrides();
 }
 
 void Instance::fillFromCustomContent(
@@ -574,6 +576,7 @@ void Instance::fillFromCustomContent(
 	loadFromCustomContent(absolutePath, relativePath, content);
 	updatePluralRules();
 	updateChoosingStickerReplacement();
+	applyForkOverrides();
 
 	_idChanges.fire_copy(_id);
 }
@@ -697,6 +700,7 @@ void Instance::applyDifferenceToMe(
 			resetValue(key);
 		});
 	}
+	applyForkOverrides();
 	if (!_derived) {
 		_updated.fire({});
 	} else {
@@ -761,6 +765,71 @@ void Instance::updatePluralRules() {
 	}
 	UpdatePluralRules(_pluralId);
 	Ui::Text::SetUpperLanguage(_pluralId);
+}
+
+void Instance::applyForkOverrides() {
+	if (!_id.startsWith(u"ru"_q)) {
+		return;
+	}
+	static const std::pair<const char*, const char*> kRussian[] = {
+		{ "lng_settings_widgets_title", "Виджеты" },
+		{ "lng_settings_disable_widgets", "Отключить HTML-виджеты в ботах" },
+		{ "lng_settings_disable_widgets_about", "Виджеты в сообщениях ботов заменяются заглушкой. На мини-приложения не влияет." },
+		{ "lng_settings_auto_submit_passcode", "Автоматически подтверждать локальный пароль" },
+		{ "lng_settings_auto_submit_passcode_about", "Разблокировка сразу после ввода полного пароля, без нажатия Enter. Пока включено, неверные попытки не засчитываются в блокировку после подбора — это ослабляет защиту пароля." },
+		{ "lng_settings_behavior_title", "Поведение" },
+		{ "lng_settings_audio_fade", "Плавное затухание звука" },
+		{ "lng_settings_last_seen_in_dialogs", "Показывать время захода в списке диалогов" },
+		{ "lng_settings_auto_copy_login_codes", "Автоматически копировать коды для входа" },
+		{ "lng_settings_auto_copy_login_codes_about", "Входящие коды для входа от Telegram копируются в буфер обмена. Любой, у кого есть доступ к буферу обмена, может их прочитать." },
+		{ "lng_mute_all", "Отключить уведомления у всех" },
+		{ "lng_mute_all_sure", "Отключить уведомления во всех чатах этой папки?" },
+		{ "lng_context_go_to_first_message", "К первому сообщению" },
+		{ "lng_settings_emoji_search_title", "Поиск эмодзи" },
+		{ "lng_settings_emoji_search_languages", "Языки поиска эмодзи" },
+		{ "lng_settings_emoji_search_languages_about", "На этих языках ищутся названия эмодзи (например :smile). Если ничего не выбрано, автоматически используются языки приложения и системы." },
+		{ "lng_settings_emoji_search_languages_automatic", "Автоматически" },
+		{ "lng_share_as_copy", "Как копию" },
+		{ "lng_share_as_copy_no_text", "Без текста" },
+		{ "lng_share_as_copy_silent_scheduled", "Запланировано без уведомления." },
+		{ "lng_share_as_copy_silent", "Без уведомления." },
+		{ "lng_share_as_copy_scheduled", "Запланировано." },
+		{ "lng_settings_menu_title", "Меню сообщений" },
+		{ "lng_settings_search_engine", "Добавить «Поиск выделенного» в контекстное меню" },
+		{ "lng_settings_search_engine_box_title", "URL поисковой системы" },
+		{ "lng_settings_search_engine_field_label", "URL должен содержать %q" },
+		{ "lng_settings_markdown_clipboard_text", "Текст в буфер обмена для «Сохранить в markdown-файл»" },
+		{ "lng_settings_markdown_clipboard_text_box_title", "Текст в буфер обмена для «Сохранить в markdown-файл»" },
+		{ "lng_settings_markdown_clipboard_text_label", "Используйте %q как место для пути к сохранённому файлу. Оставьте пустым, чтобы копировать сам путь." },
+		{ "lng_settings_markdown_clipboard_text_placeholder", "Текст для копирования при сохранении" },
+		{ "lng_settings_remember_media_menu", "Добавить «Запомнить» в меню медиа" },
+		{ "lng_settings_links_title", "Ссылки" },
+		{ "lng_fork_link_replacements", "Заменять ссылки при вставке" },
+		{ "lng_fork_link_replacements_about", "Ссылки, вставленные в сообщение, переписываются по правилам ниже. Полезно для сервисов, превью которых Telegram не показывает." },
+		{ "lng_fork_link_replacements_rules", "Правила замены" },
+		{ "lng_fork_link_replacements_rules_about", "Каждое правило — регулярное выражение и текст замены. Используйте $1 для подстановки захваченной группы." },
+		{ "lng_fork_link_replacements_add", "Добавить правило" },
+		{ "lng_fork_link_replacements_edit", "Изменить правило" },
+		{ "lng_fork_link_replacements_find", "Найти" },
+		{ "lng_fork_link_replacements_replace", "Заменить на" },
+		{ "lng_fork_link_replacements_invalid", "Некорректное выражение" },
+		{ "lng_fork_link_replacements_reset", "Сбросить" },
+		{ "lng_fork_link_replaced", "Ссылка заменена" },
+		{ "lng_fork_link_replaced_undo", "Отменить" },
+		{ "lng_context_open_uri_link", "Открыть ссылку через URI-схему" },
+		{ "lng_settings_uri_scheme", "Открывать ссылки через свою URI-схему" },
+		{ "lng_settings_uri_scheme_box_title", "Своя URI-схема" },
+		{ "lng_settings_uri_scheme_field_label", "Например: potplayer://." },
+		{ "lng_context_to_save_messages", "В Избранное" },
+		{ "lng_depersonalized_person", "Участник {number}:" },
+		{ "lng_context_search_selected", "Поиск выделенного" },
+		{ "lng_context_save_to_markdown_selected", "Сохранить в markdown-файл" },
+		{ "lng_context_save_to_markdown_done", "Markdown сохранён, путь скопирован в буфер обмена." },
+		{ "lng_context_group_items", "Сгруппировать выбранное" },
+	};
+	for (const auto &[key, value] : kRussian) {
+		applyValue(QByteArray(key), QByteArray(value));
+	}
 }
 
 void Instance::resetValue(const QByteArray &key) {
