@@ -33,7 +33,7 @@ namespace Settings {
 using namespace Builder;
 namespace {
 
-void OfferRestart(not_null<Window::SessionController*> controller) {
+void OfferRestart(Window::SessionController *controller) {
 	controller->show(Ui::MakeConfirmBox({
 		.text = tr::lng_settings_need_restart(),
 		.confirmed = [] { Core::Restart(); },
@@ -69,7 +69,7 @@ void AddForkToggle(
 
 void BuildWidgetsSection(
 		SectionBuilder &builder,
-		not_null<Window::SessionController*> controller) {
+		Window::SessionController *controller) {
 	builder.addSubsectionTitle({
 		.id = u"ekzegram/widgets"_q,
 		.title = tr::lng_settings_widgets_title(),
@@ -178,7 +178,7 @@ void BuildBehaviorSection(SectionBuilder &builder) {
 }
 
 void ShowEmojiSearchLanguagesBox(
-		not_null<Window::SessionController*> controller) {
+		Window::SessionController *controller) {
 	auto selected = std::vector<LanguageId>();
 	for (const auto &code : CurrentEmojiSearchCodes()) {
 		const auto id = LanguageId::FromName(code);
@@ -207,7 +207,7 @@ void ShowEmojiSearchLanguagesBox(
 
 void BuildEmojiSection(
 		SectionBuilder &builder,
-		not_null<Window::SessionController*> controller) {
+		Window::SessionController *controller) {
 	builder.addSkip();
 	builder.addSubsectionTitle({
 		.id = u"ekzegram/emoji"_q,
@@ -232,7 +232,7 @@ void BuildEmojiSection(
 
 void BuildMenuSection(
 		SectionBuilder &builder,
-		not_null<Window::SessionController*> controller) {
+		Window::SessionController *controller) {
 	builder.addSkip();
 	builder.addSubsectionTitle({
 		.id = u"ekzegram/menu"_q,
@@ -244,8 +244,6 @@ void BuildMenuSection(
 		.id = u"ekzegram/search_selected"_q,
 		.title = tr::lng_settings_search_engine(),
 		.st = &st::settingsButtonNoIcon,
-		.toggled = rpl::single(
-			Core::App().settings().fork().searchSelected()),
 		.keywords = { u"search"_q, u"engine"_q, u"selected"_q },
 	});
 	if (search) {
@@ -299,7 +297,7 @@ void BuildMenuSection(
 
 void BuildLinksSection(
 		SectionBuilder &builder,
-		not_null<Window::SessionController*> controller) {
+		Window::SessionController *controller) {
 	builder.addSkip();
 	builder.addSubsectionTitle({
 		.id = u"ekzegram/links"_q,
@@ -328,7 +326,6 @@ void BuildLinksSection(
 		.id = u"ekzegram/uri_scheme"_q,
 		.title = tr::lng_settings_uri_scheme(),
 		.st = &st::settingsButtonNoIcon,
-		.toggled = rpl::single(Core::App().settings().fork().askUriScheme()),
 		.keywords = { u"uri"_q, u"scheme"_q, u"custom"_q },
 	});
 	if (uri) {
@@ -365,7 +362,7 @@ class Fork : public Section<Fork> {
 public:
 	Fork(
 		QWidget *parent,
-		not_null<Window::SessionController*> controller);
+		Window::SessionController *controller);
 
 	[[nodiscard]] rpl::producer<QString> title() override;
 
@@ -393,7 +390,7 @@ const SectionBuildMethod kForkSection = kMeta.build;
 
 Fork::Fork(
 	QWidget *parent,
-	not_null<Window::SessionController*> controller)
+	Window::SessionController *controller)
 : Section(parent, controller) {
 	setupContent();
 }
