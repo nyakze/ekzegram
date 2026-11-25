@@ -429,7 +429,8 @@ jobs:
           mkdir artifact
           move %OUT%\ekzegram.exe artifact/
           if exist %OUT%\Updater.exe move %OUT%\Updater.exe artifact/
-          move %OUT%\modules artifact\
+          robocopy /E /MOVE /R:3 /W:1 %OUT%\modules artifact\modules
+          if %ERRORLEVEL% GEQ 8 exit /b 1
 
       # FORK: SignPath code signing removed — the fork ships unsigned builds.
       - uses: actions/upload-artifact@v7
