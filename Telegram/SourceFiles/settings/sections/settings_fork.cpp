@@ -359,6 +359,8 @@ void BuildLinksSection(
 	builder.addDividerText(tr::lng_fork_link_replacements_about());
 }
 
+} // namespace
+
 class Fork : public Section<Fork> {
 public:
 	Fork(
