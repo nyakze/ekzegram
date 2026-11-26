@@ -7,6 +7,12 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/userpic_view.h"
 
+#include "base/bytes.h"
+#include "base/const_string.h"
+#include "mtproto/core_types.h"
+#include "data/data_msg_id.h"
+#include "data/data_types.h"
+#include <crl/crl_object_on_queue.h>
 #include "core/application.h"
 #include "core/core_settings.h"
 #include "ui/empty_userpic.h"
