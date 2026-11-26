@@ -115,6 +115,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <QtCore/QStandardPaths>
 #include <QtCore/QMimeDatabase>
 #include <QtGui/QGuiApplication>
+#include <QtGui/QDesktopServices>
 #include <QtGui/QScreen>
 
 #include <ksandbox.h>
@@ -317,13 +318,14 @@ Application::~Application() {
 }
 
 void Application::run() {
-	// FORK (ekzegram): userpics shape is read once, before any painting.
-	Ui::SetSquareUserpics(settings().fork().squareUserpics());
 	// Depends on OpenSSL on macOS, so on ThirdParty::start().
 	// Depends on notifications settings.
 	_notifications = std::make_unique<Window::Notifications::System>();
 
 	startLocalStorage();
+
+	// FORK (ekzegram): userpics shape is read once, after settings load.
+	Ui::SetSquareUserpics(settings().fork().squareUserpics());
 
 	style::SetCustomFont(settings().customFontFamily());
 	style::internal::StartFonts();
@@ -408,24 +410,21 @@ void Application::run() {
 	setLastActiveWindow(_windows.front().second.get());
 	_windowInSettings = _lastActivePrimaryWindow = _lastActiveWindow;
 
-	// FORK (ekzegram): a toast when a newer ekzegram release is available.
+	// FORK (ekzegram): a manual update check answers with a dialog.
 	Core::ForkUpdate::found(
 	) | rpl::on_next([=](const Core::ForkUpdate::Info &info) {
+		if (!info.manual) {
+			return;
+		}
 		if (const auto window = activeWindow()) {
-			auto text = (u"ekzegram %1 is available. Open the release page."_q
-				).arg(info.tag);
-			auto entities = EntitiesInText();
-			const auto offset = int(text.indexOf(u"Open"_q));
-			entities.push_back(EntityInText(
-				EntityType::CustomUrl,
-				offset,
-				4,
-				info.url));
-			auto config = Ui::Toast::Config();
-			config.text = { text, entities };
-			// FORK (ekzegram): long enough to actually click the link.
-			config.duration = 30 * 1000;
-			window->showToast(std::move(config));
+			window->show(Ui::MakeConfirmBox({
+				.text = tr::lng_update_available(lt_tag, info.tag),
+				.confirmed = [=] {
+					QDesktopServices::openUrl(QUrl(info.url));
+				},
+				.confirmText = tr::lng_update_open_release(),
+				.cancelText = tr::lng_close(),
+			}));
 		}
 	}, _lifetime);
 
@@ -433,11 +432,9 @@ void Application::run() {
 	Core::ForkUpdate::checkedNoUpdate(
 	) | rpl::on_next([=](bool ok) {
 		if (const auto window = activeWindow()) {
-			auto config = Ui::Toast::Config();
-			config.text = { ok
-				? u"ekzegram is up to date."_q
-				: u"Could not check for updates. Try again later."_q };
-			window->showToast(std::move(config));
+			window->show(Ui::MakeInformBox(ok
+				? tr::lng_update_up_to_date()
+				: tr::lng_update_check_failed()));
 		}
 	}, _lifetime);
 
