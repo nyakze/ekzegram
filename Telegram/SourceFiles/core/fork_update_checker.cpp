@@ -86,6 +86,17 @@ struct Version {
 	};
 }
 
+[[nodiscard]] bool Newer(const Version &a, const Version &b) {
+	if (a.major != b.major) {
+		return a.major > b.major;
+	} else if (a.minor != b.minor) {
+		return a.minor > b.minor;
+	} else if (a.patch != b.patch) {
+		return a.patch > b.patch;
+	}
+	return a.fork > b.fork;
+}
+
 [[nodiscard]] bool NewerThanCurrent(const Version &version) {
 	const auto current = Version{
 		.major = AppVersion / 1000000,
@@ -93,14 +104,30 @@ struct Version {
 		.patch = AppVersion % 1000,
 		.fork = ForkBuildNumber,
 	};
-	if (version.major != current.major) {
-		return version.major > current.major;
-	} else if (version.minor != current.minor) {
-		return version.minor > current.minor;
-	} else if (version.patch != current.patch) {
-		return version.patch > current.patch;
+	return Newer(version, current);
+}
+
+[[nodiscard]] QJsonObject LatestListedRelease(const QJsonDocument &document) {
+	if (!document.isArray()) {
+		return document.object();
 	}
-	return version.fork > current.fork;
+	auto best = QJsonObject();
+	auto bestVersion = std::optional<Version>();
+	for (const auto &value : document.array()) {
+		const auto object = value.toObject();
+		if (object.value(u"draft"_q).toBool()) {
+			continue;
+		}
+		const auto parsed = ParseTag(object.value(u"tag_name"_q).toString());
+		if (!parsed) {
+			continue;
+		}
+		if (!bestVersion || Newer(*parsed, *bestVersion)) {
+			bestVersion = parsed;
+			best = object;
+		}
+	}
+	return best;
 }
 
 class Checker final : public QObject {
@@ -148,20 +175,6 @@ void Checker::checkNow() {
 	perform(true);
 }
 
-[[nodiscard]] QJsonObject FirstListedRelease(const QJsonDocument &document) {
-	if (document.isArray()) {
-		for (const auto &value : document.array()) {
-			const auto object = value.toObject();
-			if (!object.value(u"draft"_q).toBool()
-				&& ParseTag(object.value(u"tag_name"_q).toString())) {
-				return object;
-			}
-		}
-		return {};
-	}
-	return document.object();
-}
-
 void Checker::perform(bool manual) {
 	auto request = QNetworkRequest(QUrl(cInstallBetaVersion()
 		? u"https://api.github.com/repos/nyakze/ekzegram/releases?per_page=10"_q
@@ -184,7 +197,7 @@ void Checker::perform(bool manual) {
 			return;
 		}
 		const auto document = QJsonDocument::fromJson(data);
-		const auto object = FirstListedRelease(document);
+		const auto object = LatestListedRelease(document);
 		const auto tag = object.value(u"tag_name"_q).toString();
 		const auto parsed = ParseTag(tag);
 		if (parsed && NewerThanCurrent(*parsed)) {
