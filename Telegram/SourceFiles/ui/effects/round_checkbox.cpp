@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/effects/round_checkbox.h"
+#include "ui/userpic_view.h"
 
 #include "lang/lang_keys.h"
 #include "ui/rp_widget.h"

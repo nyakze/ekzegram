@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/empty_userpic.h"
+#include "ui/userpic_view.h"
 
 #include "info/channel_statistics/earn/earn_icons.h"
 #include "ui/chat/chat_style.h"

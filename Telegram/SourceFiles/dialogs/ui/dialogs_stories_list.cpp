@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "dialogs/ui/dialogs_stories_list.h"
+#include "ui/userpic_view.h"
 
 #include "base/event_filter.h"
 #include "base/flat_set.h"

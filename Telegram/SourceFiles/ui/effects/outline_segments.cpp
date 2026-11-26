@@ -6,6 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/effects/outline_segments.h"
+#include "ui/userpic_view.h"
 
 
 #include <QtCore/QtMath> // M_PI
