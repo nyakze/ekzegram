@@ -418,7 +418,7 @@ void Application::run() {
 		}
 		if (const auto window = activeWindow()) {
 			window->show(Ui::MakeConfirmBox({
-				.text = tr::lng_update_available(lt_tag, info.tag),
+				.text = tr::lng_update_available(tr::now, lt_tag, info.tag),
 				.confirmed = [=] {
 					QDesktopServices::openUrl(QUrl(info.url));
 				},

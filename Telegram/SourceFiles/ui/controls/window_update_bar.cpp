@@ -47,7 +47,7 @@ UpdateBar::UpdateBar(
 , _open(std::move(open))
 , _title(
 	this,
-	tr::lng_update_available(lt_tag, tag),
+	rpl::single(tr::lng_update_available(tr::now, lt_tag, tag)),
 	st::windowOutdatedTitle)
 , _details(this, tr::lng_update_open_release(), st::windowOutdatedDetails)
 , _close(this, st::windowOutdatedClose) {
