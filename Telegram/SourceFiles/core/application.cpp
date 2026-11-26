@@ -423,6 +423,8 @@ void Application::run() {
 				info.url));
 			auto config = Ui::Toast::Config();
 			config.text = { text, entities };
+			// FORK (ekzegram): long enough to actually click the link.
+			config.duration = 30 * 1000;
 			window->showToast(std::move(config));
 		}
 	}, _lifetime);
