@@ -152,7 +152,8 @@ void Checker::checkNow() {
 	if (document.isArray()) {
 		for (const auto &value : document.array()) {
 			const auto object = value.toObject();
-			if (!object.value(u"draft"_q).toBool()) {
+			if (!object.value(u"draft"_q).toBool()
+				&& ParseTag(object.value(u"tag_name"_q).toString())) {
 				return object;
 			}
 		}
