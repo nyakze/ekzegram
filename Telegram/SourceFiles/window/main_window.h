@@ -220,7 +220,7 @@ private:
 
 	object_ptr<Ui::PlainShadow> _titleShadow = { nullptr };
 	object_ptr<Ui::RpWidget> _outdated;
-	object_ptr<Ui::RpWidget> _updateBar;
+	object_ptr<Ui::RpWidget> _updateBar = { nullptr };
 	object_ptr<Ui::RpWidget> _screenReaderBar;
 	object_ptr<Ui::RpWidget> _body;
 	object_ptr<Ui::RpWidget> _rightColumn = { nullptr };
