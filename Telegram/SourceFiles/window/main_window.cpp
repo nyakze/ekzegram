@@ -23,6 +23,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_account.h" // Account::sessionValue.
 #include "main/main_domain.h"
 #include "core/application.h"
+#include "core/core_settings.h"
 #include "core/sandbox.h"
 #include "core/shortcuts.h"
 #include "core/update_channel.h"
@@ -94,6 +95,17 @@ using Core::WindowPosition;
 	return result;
 }
 
+// FORK (ekzegram): square tray icon for the square avatars setting.
+[[nodiscard]] const QImage &SquareLogoOr(const QImage &logo) {
+	static const auto square = QImage(u":/gui/art/logo_256_square.png"_q);
+	if (square.isNull()
+		|| !Core::IsAppLaunched()
+		|| !Core::App().settings().fork().squareUserpics()) {
+		return logo;
+	}
+	return square;
+}
+
 base::options::toggle OptionNewWindowsSizeAsFirst({
 	.id = kOptionNewWindowsSizeAsFirst,
 	.name = "Adjust size of new chat windows",
@@ -147,12 +159,12 @@ const char kOptionDisableTouchbar[] = "touchbar-disabled";
 
 const QImage &Logo() {
 	static const auto result = QImage(u":/gui/art/logo_256.png"_q);
-	return result;
+	return SquareLogoOr(result);
 }
 
 const QImage &LogoNoMargin() {
 	static const auto result = QImage(u":/gui/art/logo_256_no_margin.png"_q);
-	return result;
+	return SquareLogoOr(result);
 }
 
 void ConvertIconToBlack(QImage &image) {

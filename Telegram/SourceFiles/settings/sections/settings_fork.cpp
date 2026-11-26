@@ -118,6 +118,52 @@ void BuildPasscodeSection(SectionBuilder &builder) {
 	builder.addDividerText(tr::lng_settings_auto_submit_passcode_about());
 }
 
+void BuildAppearanceSection(
+		SectionBuilder &builder,
+		Window::SessionController *controller) {
+	builder.addSkip();
+	builder.addSubsectionTitle({
+		.id = u"ekzegram/appearance"_q,
+		.title = tr::lng_settings_appearance_title(),
+		.keywords = { u"appearance"_q, u"square"_q, u"avatars"_q },
+	});
+
+	const auto square = builder.addButton({
+		.id = u"ekzegram/square_avatars"_q,
+		.title = tr::lng_settings_square_avatars(),
+		.st = &st::settingsButtonNoIcon,
+		.keywords = { u"square"_q, u"avatars"_q, u"userpic"_q, u"circle"_q },
+	});
+	if (square) {
+		const auto state = square->lifetime().make_state<rpl::variable<bool>>(
+			Core::App().settings().fork().squareUserpics());
+		square->toggleOn(state->value());
+		square->toggledChanges() | rpl::on_next([=](bool enabled) {
+			if (enabled == state->current()) {
+				return;
+			}
+			*state = enabled;
+			if (!controller) {
+				return;
+			}
+			controller->show(
+				Ui::MakeConfirmBox({
+					.text = tr::lng_settings_need_restart(),
+					.confirmed = [=] {
+						Core::App().settings().fork().setSquareUserpics(
+							enabled);
+						Core::App().saveSettingsDelayed();
+						Core::Restart();
+					},
+					.cancelled = [=] { *state = !enabled; },
+					.confirmText = tr::lng_settings_restart_now(),
+					.cancelText = tr::lng_settings_restart_later(),
+				}),
+				Ui::LayerOption::KeepOther);
+		}, square->lifetime());
+	}
+}
+
 void BuildBehaviorSection(SectionBuilder &builder) {
 	builder.addSkip();
 	builder.addSubsectionTitle({
@@ -399,6 +445,7 @@ const auto kMeta = BuildHelper({
 	const auto controller = builder.controller();
 	BuildWidgetsSection(builder, controller);
 	BuildPasscodeSection(builder);
+	BuildAppearanceSection(builder, controller);
 	BuildBehaviorSection(builder);
 	BuildLinksSection(builder, controller);
 	BuildMenuSection(builder, controller);

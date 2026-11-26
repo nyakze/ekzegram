@@ -10,6 +10,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "base/event_filter.h"
 #include "base/flat_set.h"
 #include "base/qt_signal_producer.h"
+#include "core/application.h"
+#include "core/core_settings.h"
 #include "lang/lang_keys.h"
 #include "ui/effects/round_checkbox.h"
 #include "ui/effects/outline_segments.h"
@@ -460,6 +462,7 @@ void List::ensureLayer() {
 	_layer.fill(Qt::transparent);
 }
 
+// FORK (ekzegram): square avatars setting, adapted from Forkgram.
 void List::paint(
 		QPainter &p,
 		const Layout &layout,
@@ -737,7 +740,11 @@ void List::paint(
 					p.setPen(QPen(gradient, line));
 				}
 				p.setBrush(Qt::NoBrush);
-				p.drawEllipse(outer);
+				if (Core::App().settings().fork().squareUserpics()) {
+					p.drawRect(outer);
+				} else {
+					p.drawEllipse(outer);
+				}
 			} else {
 				validateSegments(itemFull, gradient, line, true);
 				Ui::PaintOutlineSegments(
@@ -782,7 +789,11 @@ void List::paint(
 			p.setCompositionMode(QPainter::CompositionMode_Source);
 			p.setPen(Qt::NoPen);
 			p.setBrush(st::transparent);
-			p.drawEllipse(rect);
+			if (Core::App().settings().fork().squareUserpics()) {
+				p.drawRect(rect);
+			} else {
+				p.drawEllipse(rect);
+			}
 			p.setCompositionMode(QPainter::CompositionMode_SourceOver);
 		}
 		if (hasReadLine) {

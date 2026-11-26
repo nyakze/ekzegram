@@ -37,6 +37,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "mtproto/mtproto_config.h"
 #include "core/application.h"
 #include "core/click_handler_types.h"
+#include "core/core_settings.h"
 #include "window/notifications_manager.h"
 #include "window/window_session_controller.h"
 #include "window/main_window.h" // Window::LogoNoMargin.
@@ -495,6 +496,7 @@ InMemoryKey PeerData::userpicUniqueKey(Ui::PeerUserpicView &view) const {
 		: inMemoryKey(_userpic.location());
 }
 
+// FORK (ekzegram): square avatars setting, adapted from Forkgram.
 QImage PeerData::GenerateUserpicImage(
 		not_null<PeerData*> peer,
 		Ui::PeerUserpicView &view,
@@ -516,6 +518,8 @@ QImage PeerData::GenerateUserpicImage(
 			return round(*radius);
 		} else if (peer->isForum()) {
 			return round(size * Ui::ForumUserpicRadiusMultiplier());
+		} else if (Core::App().settings().fork().squareUserpics()) {
+			return image;
 		} else {
 			return Images::Circle(std::move(image));
 		}

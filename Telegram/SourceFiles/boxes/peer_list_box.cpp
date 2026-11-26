@@ -9,6 +9,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "boxes/peer_list_section_headers.h"
 #include "boxes/peer_list_section_index.h"
+#include "core/application.h"
+#include "core/core_settings.h"
 #include "history/history.h" // chatListNameSortKey.
 #include "main/session/session_show.h"
 #include "main/main_session.h"
@@ -69,6 +71,7 @@ PaintRoundImageCallback PaintUserpicCallback(
 	};
 }
 
+// FORK (ekzegram): square avatars setting, adapted from Forkgram.
 PaintRoundImageCallback ForceRoundUserpicCallback(not_null<PeerData*> peer) {
 	auto userpic = Ui::PeerUserpicView();
 	auto cache = std::make_shared<QImage>();
@@ -83,7 +86,9 @@ PaintRoundImageCallback ForceRoundUserpicCallback(not_null<PeerData*> peer) {
 		peer->paintUserpicLeft(q, userpic, 0, 0, outerWidth, size);
 		q.end();
 
-		*cache = Images::Circle(std::move(*cache));
+		if (!Core::App().settings().fork().squareUserpics()) {
+			*cache = Images::Circle(std::move(*cache));
+		}
 		p.drawImage(x, y, *cache);
 	};
 }

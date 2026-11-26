@@ -1515,6 +1515,7 @@ QRect ShareBox::Inner::storyRepostRect() const {
 		size);
 }
 
+// FORK (ekzegram): square avatars setting, adapted from Forkgram.
 void ShareBox::Inner::paintStoryRepost(Painter &p) {
 	const auto outerWidth = width();
 	const auto circleRect = storyRepostRect();
@@ -1532,7 +1533,11 @@ void ShareBox::Inner::paintStoryRepost(Painter &p) {
 	});
 	p.setPen(Qt::NoPen);
 	p.setBrush(gradient);
-	p.drawEllipse(circleRect);
+	if (Core::App().settings().fork().squareUserpics()) {
+		p.drawRect(circleRect);
+	} else {
+		p.drawEllipse(circleRect);
+	}
 
 	if (_storyRepostLottie) {
 		_storyRepostLottie->paintInCenter(p, circleRect);

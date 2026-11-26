@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/userpic_view.h"
 
+#include "core/application.h"
+#include "core/core_settings.h"
 #include "ui/empty_userpic.h"
 #include "ui/painter.h"
 #include "ui/image/image_prepare.h"
@@ -131,6 +133,7 @@ bool PeerUserpicLoading(const PeerUserpicView &view) {
 	return view.cloud && view.cloud->isNull();
 }
 
+// FORK (ekzegram): square avatars setting, adapted from Forkgram.
 void ValidateUserpicCache(
 		PeerUserpicView &view,
 		const QImage *cloud,
@@ -167,7 +170,7 @@ void ValidateUserpicCache(
 				Images::CornersMask(size
 					* Ui::ForumUserpicRadiusMultiplier()
 					/ style::DevicePixelRatio()));
-		} else {
+		} else if (!Core::App().settings().fork().squareUserpics()) {
 			view.cached = Images::Circle(std::move(view.cached));
 		}
 	} else {

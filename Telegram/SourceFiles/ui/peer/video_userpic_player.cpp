@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/peer/video_userpic_player.h"
 
+#include "core/application.h"
+#include "core/core_settings.h"
 #include "data/data_peer.h"
 #include "data/data_photo.h"
 #include "data/data_session.h"
@@ -48,6 +50,7 @@ void VideoUserpicPlayer::clear() {
 	_peer = nullptr;
 }
 
+// FORK (ekzegram): square avatars setting, adapted from Forkgram.
 QImage VideoUserpicPlayer::frame(
 		QSize size,
 		not_null<PeerData*> peer,
@@ -75,7 +78,7 @@ QImage VideoUserpicPlayer::frame(
 			_roundingCorners = Images::CornersMask(radius);
 		}
 		request.rounding = Images::CornersMaskRef(_roundingCorners);
-	} else {
+	} else if (!Core::App().settings().fork().squareUserpics()) {
 		if (_ellipseMask.size() != request.outer) {
 			_ellipseMask = Images::EllipseMask(size);
 		}

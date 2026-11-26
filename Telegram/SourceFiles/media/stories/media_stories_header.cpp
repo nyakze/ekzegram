@@ -9,6 +9,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "base/unixtime.h"
 #include "chat_helpers/compose/compose_show.h"
+#include "core/application.h"
+#include "core/core_settings.h"
 #include "core/ui_integration.h"
 #include "data/stickers/data_custom_emoji.h"
 #include "data/data_peer.h"
@@ -134,6 +136,7 @@ bool UserpicBadge::eventFilter(QObject *o, QEvent *e) {
 	return false;
 }
 
+// FORK (ekzegram): square avatars setting, adapted from Forkgram.
 void UserpicBadge::paintEvent(QPaintEvent *e) {
 	const auto ratio = style::DevicePixelRatio();
 	const auto layerSize = size() * ratio;
@@ -161,7 +164,11 @@ void UserpicBadge::paintEvent(QPaintEvent *e) {
 	q.setPen(pen);
 	q.setBrush(gradient);
 	q.setCompositionMode(QPainter::CompositionMode_Source);
-	q.drawEllipse(outer);
+	if (Core::App().settings().fork().squareUserpics()) {
+		q.drawRect(outer);
+	} else {
+		q.drawEllipse(outer);
+	}
 	q.setCompositionMode(QPainter::CompositionMode_SourceOver);
 	_badgeData.icon->paintInCenter(q, _badge);
 	q.end();

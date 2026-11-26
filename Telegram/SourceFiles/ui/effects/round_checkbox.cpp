@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/effects/round_checkbox.h"
 
+#include "core/application.h"
+#include "core/core_settings.h"
 #include "lang/lang_keys.h"
 #include "ui/rp_widget.h"
 #include "ui/ui_utility.h"
@@ -406,6 +408,7 @@ void RoundImageCheckbox::paint(
 	}
 }
 
+// FORK (ekzegram): square avatars setting, adapted from Forkgram.
 void RoundImageCheckbox::paintFrame(
 		Painter &p,
 		int x,
@@ -459,7 +462,11 @@ void RoundImageCheckbox::paintFrame(
 				segments ? _segments.front().width : _st.selectWidth);
 			p.setPen(pen);
 			if (!radius) {
-				p.drawEllipse(outline);
+				if (Core::App().settings().fork().squareUserpics()) {
+					p.drawRect(outline);
+				} else {
+					p.drawEllipse(outline);
+				}
 			} else {
 				p.drawRoundedRect(outline, *radius, *radius);
 			}

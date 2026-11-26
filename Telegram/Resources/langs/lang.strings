@@ -9476,6 +9476,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 // ekzegram fork settings.
 "lng_settings_section_ekzegram" = "ekzegram";
 "lng_settings_widgets_title" = "Widgets";
+"lng_settings_appearance_title" = "Appearance";
+"lng_settings_square_avatars" = "Square avatars";
 "lng_settings_disable_widgets" = "Disable HTML widgets in bots";
 "lng_settings_disable_widgets_about" = "Widgets in bot messages are replaced with an unavailable placeholder. Mini Apps are not affected.";
 "lng_settings_auto_submit_passcode" = "Auto-submit local passcode";

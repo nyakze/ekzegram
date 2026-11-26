@@ -7,7 +7,46 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/effects/outline_segments.h"
 
+#include "core/application.h"
+#include "core/core_settings.h"
+
+#include <QtCore/QtMath> // M_PI
+#include <algorithm>
+#include <cmath>
+
 namespace Ui {
+namespace {
+
+[[nodiscard]] QPointF SquareArcPoint(const QRectF &oval, float64 angle) {
+	const auto rad = M_PI / 2. - (angle * M_PI / 180.);
+	const auto r = oval.width() / 2.;
+	const auto c = std::cos(rad);
+	const auto s = std::sin(rad);
+	const auto scale = r / std::max(std::abs(c), std::abs(s));
+	return QPointF(oval.x() + r + scale * c, oval.y() + r + scale * s);
+}
+
+// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+void DrawSquareArc(
+		QPainter &p,
+		const QRectF &oval,
+		int startAngle,
+		int spanAngle) {
+	const auto from = float64((startAngle / 16) + 90);
+	const auto till = from + (spanAngle / 16);
+	auto path = QPainterPath();
+	path.moveTo(SquareArcPoint(oval, from));
+	for (auto i = 0; i != 4; ++i) {
+		const auto corner = 225. + (90. * i);
+		if (corner > from && corner < till) {
+			path.lineTo(SquareArcPoint(oval, corner));
+		}
+	}
+	path.lineTo(SquareArcPoint(oval, till));
+	p.drawPath(path);
+}
+
+} // namespace
 
 void PaintOutlineSegments(
 		QPainter &p,
@@ -20,7 +59,11 @@ void PaintOutlineSegments(
 	const auto count = std::min(int(segments.size()), kOutlineSegmentsMax);
 	if (count == 1) {
 		p.setPen(QPen(segments.front().brush, segments.front().width));
-		p.drawEllipse(ellipse);
+		if (Core::App().settings().fork().squareUserpics()) {
+			p.drawRect(ellipse);
+		} else {
+			p.drawEllipse(ellipse);
+		}
 		return;
 	}
 	const auto small = 160;
@@ -65,7 +108,12 @@ void PaintOutlineSegments(
 			}
 			added += (separator + length) * (1. - fromFullProgress);
 		}
-		p.drawArc(ellipse, from, int(base::SafeRound(till + added)) - from);
+		const auto span = int(base::SafeRound(till + added)) - from;
+		if (Core::App().settings().fork().squareUserpics()) {
+			DrawSquareArc(p, ellipse, from, span);
+		} else {
+			p.drawArc(ellipse, from, span);
+		}
 	}
 }
 

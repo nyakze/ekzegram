@@ -7,6 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "dialogs/dialogs_row.h"
 
+#include "core/application.h"
+#include "core/core_settings.h"
 #include "ui/chat/chat_theme.h" // CountAverageColor.
 #include "ui/color_contrast.h"
 #include "ui/effects/credits_graphics.h"
@@ -173,6 +175,7 @@ constexpr auto kBlurRadius = 24;
 	return starImage;
 }
 
+// FORK (ekzegram): square avatars setting, adapted from Forkgram.
 [[nodiscard]] QImage CornerBadgeTTL(
 		not_null<PeerData*> peer,
 		Ui::PeerUserpicView &view,
@@ -186,11 +189,14 @@ constexpr auto kBlurRadius = 24;
 	const auto partRect = CornerBadgeTTLRect(fullSize);
 	const auto &partSize = partRect.width();
 	const auto partSkip = fullSize - partSize;
-	auto result = Images::Circle(BlurredDarkenedPart(
+	auto image = BlurredDarkenedPart(
 		PeerData::GenerateUserpicImage(peer, view, fullSize * ratio, 0),
 		QRect(
 			QPoint(partSkip, partSkip) * ratio,
-			QSize(partSize, partSize) * ratio)));
+			QSize(partSize, partSize) * ratio));
+	auto result = Core::App().settings().fork().squareUserpics()
+		? std::move(image)
+		: Images::Circle(std::move(image));
 	result.setDevicePixelRatio(ratio);
 
 	auto q = QPainter(&result);
@@ -226,13 +232,16 @@ constexpr auto kBlurRadius = 24;
 	const auto ratio = style::DevicePixelRatio();
 	const auto fullSize = photoSize;
 	const auto partSize = CornerBadgeHiddenRect(fullSize).size();
-	auto result = Images::Circle(BlurredDarkenedPart(
+	auto image = BlurredDarkenedPart(
 		PeerData::GenerateUserpicImage(peer, view, fullSize * ratio, 0),
 		QRect(
 			QPoint(
 				fullSize - partSize.width(),
 				fullSize - partSize.height()) * ratio,
-			partSize * ratio)));
+			partSize * ratio));
+	auto result = Core::App().settings().fork().squareUserpics()
+		? std::move(image)
+		: Images::Circle(std::move(image));
 	result.setDevicePixelRatio(ratio);
 
 	auto q = QPainter(&result);

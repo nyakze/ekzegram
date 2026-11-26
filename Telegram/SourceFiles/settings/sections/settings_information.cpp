@@ -877,7 +877,12 @@ void SetupAccountsWrap(
 			pen.setWidthF(line);
 			p.setPen(pen);
 			p.setBrush(Qt::NoBrush);
-			p.drawEllipse(rect);
+			// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+			if (Core::App().settings().fork().squareUserpics()) {
+				p.drawRect(rect);
+			} else {
+				p.drawEllipse(rect);
+			}
 		}
 	}, state->userpic.lifetime());
 

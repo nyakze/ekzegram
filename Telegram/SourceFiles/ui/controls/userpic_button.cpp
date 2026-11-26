@@ -28,6 +28,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/history.h"
 #include "calls/calls_instance.h"
 #include "core/application.h"
+#include "core/core_settings.h"
 #include "ui/effects/premium_graphics.h"
 #include "ui/layers/generic_box.h"
 #include "ui/text/text_utilities.h"
@@ -735,6 +736,7 @@ void UserpicButton::paintEvent(QPaintEvent *e) {
 	}
 }
 
+// FORK (ekzegram): square avatars setting, adapted from Forkgram.
 void UserpicButton::paintUserpicFrame(Painter &p, QPoint photoPosition) {
 	checkStreamedIsStarted();
 	if (_streamed
@@ -756,7 +758,7 @@ void UserpicButton::paintUserpicFrame(Painter &p, QPoint photoPosition) {
 				_roundingCorners = Images::CornersMask(radius);
 			}
 			request.rounding = Images::CornersMaskRef(_roundingCorners);
-		} else {
+		} else if (!Core::App().settings().fork().squareUserpics()) {
 			if (_ellipseMask.size() != request.outer) {
 				_ellipseMask = Images::EllipseMask(size);
 			}
@@ -800,11 +802,14 @@ QPoint UserpicButton::countPhotoPosition() const {
 
 QImage UserpicButton::prepareRippleMask() const {
 	const auto size = QSize(_st.photoSize, _st.photoSize);
-	return useForumShape()
-		? Ui::RippleAnimation::RoundRectMask(
+	if (useForumShape()) {
+		return Ui::RippleAnimation::RoundRectMask(
 			size,
-			int(_st.photoSize * Ui::ForumUserpicRadiusMultiplier()))
-		: Ui::RippleAnimation::EllipseMask(size);
+			int(_st.photoSize * Ui::ForumUserpicRadiusMultiplier()));
+	} else if (Core::App().settings().fork().squareUserpics()) {
+		return Ui::RippleAnimation::RoundRectMask(size, 0);
+	}
+	return Ui::RippleAnimation::EllipseMask(size);
 }
 
 QPoint UserpicButton::prepareRippleStartPosition() const {
@@ -1151,12 +1156,15 @@ void UserpicButton::showCustom(QImage &&image) {
 			size * style::DevicePixelRatio(),
 			Qt::IgnoreAspectRatio,
 			Qt::SmoothTransformation);
-		_userpic = Ui::PixmapFromImage(useForumShape()
-			? Images::Round(
+		if (useForumShape()) {
+			small = Images::Round(
 				std::move(small),
 				Images::CornersMask(_st.photoSize
-					* Ui::ForumUserpicRadiusMultiplier()))
-			: Images::Circle(std::move(small)));
+					* Ui::ForumUserpicRadiusMultiplier()));
+		} else if (!Core::App().settings().fork().squareUserpics()) {
+			small = Images::Circle(std::move(small));
+		}
+		_userpic = Ui::PixmapFromImage(std::move(small));
 	} else {
 		_userpic = CreateSquarePixmap(_st.photoSize, [&](Painter &p) {
 			fillShape(p, CreateDefaultGradientBrush(_st.photoSize));
@@ -1235,6 +1243,8 @@ void UserpicButton::fillShape(QPainter &p, QBrush brush) const {
 	if (useForumShape()) {
 		const auto radius = size * Ui::ForumUserpicRadiusMultiplier();
 		p.drawRoundedRect(0, 0, size, size, radius, radius);
+	} else if (Core::App().settings().fork().squareUserpics()) {
+		p.drawRect(0, 0, size, size);
 	} else {
 		p.drawEllipse(0, 0, size, size);
 	}
@@ -1268,12 +1278,18 @@ void UserpicButton::prepareUserpicPixmap() {
 						QSize(size, size) * ratio,
 						Qt::IgnoreAspectRatio,
 						Qt::SmoothTransformation);
-					image = useForumShape()
-						? Images::Round(
+					auto image = full->original().scaled(
+						QSize(size, size) * ratio,
+						Qt::IgnoreAspectRatio,
+						Qt::SmoothTransformation);
+					if (useForumShape()) {
+						image = Images::Round(
 							std::move(image),
 							Images::CornersMask(size
-								* Ui::ForumUserpicRadiusMultiplier()))
-						: Images::Circle(std::move(image));
+								* Ui::ForumUserpicRadiusMultiplier()));
+					} else if (!Core::App().settings().fork().squareUserpics()) {
+						image = Images::Circle(std::move(image));
+					}
 					image.setDevicePixelRatio(style::DevicePixelRatio());
 					p.drawImage(0, 0, image);
 				}
