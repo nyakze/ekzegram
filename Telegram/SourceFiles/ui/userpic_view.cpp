@@ -170,8 +170,8 @@ void ValidateUserpicCache(
 				Images::CornersMask(size
 					* Ui::ForumUserpicRadiusMultiplier()
 					/ style::DevicePixelRatio()));
-		} else if (!::Ui::SquareUserpics()) {
-			view.cached = Images::Circle(std::move(view.cached));
+		} else {
+			view.cached = CircleOrSquare(std::move(view.cached));
 		}
 	} else {
 		if (view.cached.size() != full) {
@@ -202,6 +202,23 @@ void SetSquareUserpics(bool value) {
 
 bool SquareUserpics() {
 	return gSquareUserpics;
+}
+
+QImage CircleOrSquare(QImage &&image, QRect target) {
+	return gSquareUserpics
+		? std::move(image)
+		: Images::Circle(std::move(image), target);
+}
+
+QImage CircleOrSquareMask(QSize size) {
+	if (!gSquareUserpics) {
+		return Images::EllipseMask(size);
+	}
+	const auto ratio = style::DevicePixelRatio();
+	auto result = QImage(size * ratio, QImage::Format_ARGB32_Premultiplied);
+	result.fill(Qt::white);
+	result.setDevicePixelRatio(ratio);
+	return result;
 }
 
 } // namespace Ui

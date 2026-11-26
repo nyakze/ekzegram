@@ -30,6 +30,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/text/text_utilities.h"
 #include "ui/toast/toast.h"
 #include "ui/painter.h"
+#include "ui/userpic_view.h"
 #include "ui/ui_utility.h"
 #include "chat_helpers/message_field.h"
 #include "menu/menu_check_item.h"
@@ -1533,7 +1534,7 @@ void ShareBox::Inner::paintStoryRepost(Painter &p) {
 	});
 	p.setPen(Qt::NoPen);
 	p.setBrush(gradient);
-	if (Core::App().settings().fork().squareUserpics()) {
+	if (Ui::SquareUserpics()) {
 		p.drawRect(circleRect);
 	} else {
 		p.drawEllipse(circleRect);

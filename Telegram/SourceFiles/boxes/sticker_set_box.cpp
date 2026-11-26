@@ -66,6 +66,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/painter.h"
 #include "ui/power_saving.h"
 #include "ui/rect.h"
+#include "ui/userpic_view.h"
 #include "ui/vertical_list.h"
 #include "window/window_session_controller.h"
 #include "styles/style_chat.h"
@@ -181,7 +182,8 @@ void ValidatePremiumLockBg(
 		anim::color(color, st::windowSubTextFg, kGrayLockOpacity));
 	p.end();
 
-	image = Images::Circle(std::move(image));
+	// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+	image = Ui::CircleOrSquare(std::move(image));
 }
 
 void ValidatePremiumStarFg(const style::icon &lockIcon, QImage &image) {

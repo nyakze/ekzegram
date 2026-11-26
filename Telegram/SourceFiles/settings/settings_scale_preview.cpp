@@ -22,6 +22,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/cached_round_corners.h"
 #include "ui/painter.h"
 #include "ui/ui_utility.h"
+#include "ui/userpic_view.h"
 #include "window/themes/window_theme.h"
 #include "window/section_widget.h"
 #include "window/window_controller.h"
@@ -746,7 +747,8 @@ void Preview::validateUserpicCache() {
 		|| _userpic.isEmpty()) {
 		return;
 	}
-	_userpicImage = Images::Circle(_userpicOriginal.scaled(
+	// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+	_userpicImage = Ui::CircleOrSquare(_userpicOriginal.scaled(
 		_userpic.size() * _ratio,
 		Qt::IgnoreAspectRatio,
 		Qt::SmoothTransformation));

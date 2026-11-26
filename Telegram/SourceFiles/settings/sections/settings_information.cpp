@@ -31,6 +31,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/vertical_list.h"
 #include "ui/unread_badge_paint.h"
 #include "ui/ui_utility.h"
+#include "ui/userpic_view.h"
 #include "core/application.h"
 #include "core/click_handler_types.h"
 #include "core/core_settings.h"
@@ -878,7 +879,7 @@ void SetupAccountsWrap(
 			p.setPen(pen);
 			p.setBrush(Qt::NoBrush);
 			// FORK (ekzegram): square avatars setting, adapted from Forkgram.
-			if (Core::App().settings().fork().squareUserpics()) {
+			if (Ui::SquareUserpics()) {
 				p.drawRect(rect);
 			} else {
 				p.drawEllipse(rect);

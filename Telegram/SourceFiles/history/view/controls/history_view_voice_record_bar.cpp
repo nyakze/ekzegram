@@ -43,6 +43,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/text/text_utilities.h"
 #include "ui/dynamic_image.h"
 #include "ui/painter.h"
+#include "ui/userpic_view.h"
 #include "ui/widgets/fields/input_field.h" // ShouldSubmit.
 #include "ui/widgets/tooltip.h"
 #include "ui/rect.h"
@@ -151,7 +152,8 @@ std::shared_ptr<Ui::DynamicImage> SoundedPreview::clone() {
 QImage SoundedPreview::image(int size) {
 	const auto full = QSize(size, size) * style::DevicePixelRatio();
 	if (_roundingMask.size() != full) {
-		_roundingMask = Images::EllipseMask(full);
+		// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+		_roundingMask = Ui::CircleOrSquareMask(full);
 	}
 	const auto player = ::Media::Player::instance();
 	const auto streamed = _trimPreview->frozen

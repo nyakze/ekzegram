@@ -12,6 +12,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/text/text_utilities.h"
 #include "ui/image/image_prepare.h"
 #include "ui/painter.h"
+#include "ui/userpic_view.h"
 #include "lang/lang_keys.h"
 #include "styles/style_dialogs.h"
 
@@ -120,11 +121,12 @@ void DownloadBar::refreshThumbnail() {
 	const auto loadingsize = size;
 	const auto donesize = size + (added - st::downloadLoadingLine) * 2;
 	const auto make = [&](int size) {
-		return Images::Circle(Make(_thumbnailLarge, size));
+		// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+		return Ui::CircleOrSquare(Make(_thumbnailLarge, size));
 	};
 	_thumbnail = make(loadingsize);
 	_thumbnailDone = make(donesize);
-	_thumbnailLarge = Images::Circle(std::move(_thumbnailLarge));
+	_thumbnailLarge = Ui::CircleOrSquare(std::move(_thumbnailLarge));
 }
 
 void DownloadBar::refreshIcon() {

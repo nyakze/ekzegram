@@ -9,6 +9,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "base/weak_ptr.h"
 
+#include <QtCore/QRect>
 #include <QtGui/QImage>
 #include <QtGui/QColor>
 
@@ -60,6 +61,8 @@ struct PeerUserpicView {
 // FORK (ekzegram): square userpics flag, set once at startup.
 void SetSquareUserpics(bool value);
 [[nodiscard]] bool SquareUserpics();
+[[nodiscard]] QImage CircleOrSquare(QImage &&image, QRect target = QRect());
+[[nodiscard]] QImage CircleOrSquareMask(QSize size);
 
 void ValidateUserpicCache(
 	PeerUserpicView &view,

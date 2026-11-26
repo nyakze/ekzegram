@@ -8,6 +8,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/unread_badge_paint.h"
 
 #include "ui/ui_utility.h"
+#include "ui/userpic_view.h"
 #include "styles/style_dialogs.h"
 
 namespace Ui {
@@ -68,11 +69,22 @@ UnreadBadgeStyleData &UnreadBadgeStyles() {
 	return result;
 }
 
+// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+[[nodiscard]] QImage CreateSquareMask(int size) {
+	const auto realSize = size * style::DevicePixelRatio();
+	auto result = QImage(realSize, realSize, QImage::Format_Grayscale8);
+	result.fill(Qt::white);
+	result.setDevicePixelRatio(style::DevicePixelRatio());
+	return result;
+}
+
 void CreateCircleMask(UnreadBadgeSizeData *data, int size) {
 	if (!data->circle.isNull()) {
 		return;
 	}
-	data->circle = style::createCircleMask(size);
+	data->circle = Ui::SquareUserpics()
+		? CreateSquareMask(size)
+		: style::createCircleMask(size);
 }
 
 [[nodiscard]] QImage ColorizeCircleHalf(

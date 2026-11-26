@@ -18,6 +18,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/dynamic_image.h"
 #include "ui/painter.h"
 #include "ui/rp_widget.h"
+#include "ui/userpic_view.h"
 #include "webrtc/webrtc_video_track.h"
 #include "styles/style_chat.h"
 #include "styles/style_chat_helpers.h"
@@ -1210,7 +1211,8 @@ bool RoundVideoRecorder::progressAnimationCallback(crl::time now) {
 void RoundVideoRecorder::preparePlaceholder(const QImage &placeholder) {
 	const auto ratio = style::DevicePixelRatio();
 	const auto full = QSize(_side, _side) * ratio;
-	_framePlaceholder = Images::Circle(
+	// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+	_framePlaceholder = Ui::CircleOrSquare(
 		(placeholder.isNull()
 			? QImage(u":/gui/art/round_placeholder.jpg"_q)
 			: placeholder).scaled(
@@ -1261,7 +1263,7 @@ void RoundVideoRecorder::prepareFrame(bool blurred) {
 			QSize(_side, _side) * ratio,
 			Qt::KeepAspectRatio,
 			Qt::SmoothTransformation).mirrored(true, false);
-		_framePrepared = Images::Circle(std::move(scaled));
+		_framePrepared = Ui::CircleOrSquare(std::move(scaled));
 		_framePrepared.setDevicePixelRatio(ratio);
 	}
 }

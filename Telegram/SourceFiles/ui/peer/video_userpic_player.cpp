@@ -7,8 +7,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/peer/video_userpic_player.h"
 
-#include "core/application.h"
-#include "core/core_settings.h"
 #include "data/data_peer.h"
 #include "data/data_photo.h"
 #include "data/data_session.h"
@@ -20,6 +18,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/image/image_prepare.h"
 #include "ui/empty_userpic.h"
 #include "ui/painter.h"
+#include "ui/userpic_view.h"
 
 namespace Ui {
 
@@ -78,9 +77,9 @@ QImage VideoUserpicPlayer::frame(
 			_roundingCorners = Images::CornersMask(radius);
 		}
 		request.rounding = Images::CornersMaskRef(_roundingCorners);
-	} else if (!Core::App().settings().fork().squareUserpics()) {
+	} else {
 		if (_ellipseMask.size() != request.outer) {
-			_ellipseMask = Images::EllipseMask(size);
+			_ellipseMask = Ui::CircleOrSquareMask(size);
 		}
 		request.mask = _ellipseMask;
 	}

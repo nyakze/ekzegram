@@ -9,8 +9,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "base/unixtime.h"
 #include "chat_helpers/compose/compose_show.h"
-#include "core/application.h"
-#include "core/core_settings.h"
 #include "core/ui_integration.h"
 #include "data/stickers/data_custom_emoji.h"
 #include "data/data_peer.h"
@@ -18,6 +16,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "media/stories/media_stories_controller.h"
 #include "lang/lang_keys.h"
 #include "ui/controls/userpic_button.h"
+#include "ui/userpic_view.h"
 #include "ui/layers/box_content.h"
 #include "ui/text/custom_emoji_helper.h"
 #include "ui/text/custom_emoji_text_badge.h"
@@ -164,7 +163,7 @@ void UserpicBadge::paintEvent(QPaintEvent *e) {
 	q.setPen(pen);
 	q.setBrush(gradient);
 	q.setCompositionMode(QPainter::CompositionMode_Source);
-	if (Core::App().settings().fork().squareUserpics()) {
+	if (Ui::SquareUserpics()) {
 		q.drawRect(outer);
 	} else {
 		q.drawEllipse(outer);

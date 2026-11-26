@@ -26,6 +26,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/wrap/vertical_layout.h"
 #include "ui/dynamic_image.h"
 #include "ui/painter.h"
+#include "ui/userpic_view.h"
 #include "ui/vertical_list.h"
 #include "wallet/wallet_content.h"
 #include "wallet/wallet_session.h"
@@ -114,7 +115,8 @@ struct AppsState {
 	if (image.isNull()) {
 		return QImage();
 	}
-	image = Images::Circle(std::move(image));
+	// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+	image = Ui::CircleOrSquare(std::move(image));
 	image.setDevicePixelRatio(ratio);
 	return image;
 }

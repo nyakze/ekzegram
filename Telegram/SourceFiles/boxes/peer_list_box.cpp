@@ -9,8 +9,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "boxes/peer_list_section_headers.h"
 #include "boxes/peer_list_section_index.h"
-#include "core/application.h"
-#include "core/core_settings.h"
 #include "history/history.h" // chatListNameSortKey.
 #include "main/session/session_show.h"
 #include "main/main_session.h"
@@ -25,6 +23,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/selecting_scroll.h"
 #include "ui/widgets/popup_menu.h"
 #include "ui/empty_userpic.h"
+#include "ui/userpic_view.h"
 #include "ui/wrap/slide_wrap.h"
 #include "ui/text/text_options.h"
 #include "ui/painter.h"
@@ -86,9 +85,7 @@ PaintRoundImageCallback ForceRoundUserpicCallback(not_null<PeerData*> peer) {
 		peer->paintUserpicLeft(q, userpic, 0, 0, outerWidth, size);
 		q.end();
 
-		if (!Core::App().settings().fork().squareUserpics()) {
-			*cache = Images::Circle(std::move(*cache));
-		}
+		*cache = Ui::CircleOrSquare(std::move(*cache));
 		p.drawImage(x, y, *cache);
 	};
 }

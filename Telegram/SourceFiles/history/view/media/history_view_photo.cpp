@@ -34,6 +34,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/painter.h"
 #include "ui/power_saving.h"
 #include "ui/ui_utility.h"
+#include "ui/userpic_view.h"
 #include "data/data_session.h"
 #include "data/data_stories.h"
 #include "data/data_streaming.h"
@@ -652,7 +653,8 @@ void Photo::validateUserpicImageCache(QSize size, bool forum) const {
 			Images::CornersMask(std::min(size.width(), size.height())
 				* Ui::ForumUserpicRadiusMultiplier()));
 	} else {
-		original = Images::Circle(std::move(original));
+		// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+		original = Ui::CircleOrSquare(std::move(original));
 	}
 	_imageCache = std::move(original);
 	_imageCacheForum = forumValue;
@@ -756,7 +758,7 @@ void Photo::paintUserpicFrame(
 				_streamed->roundingCorners);
 		} else {
 			if (_streamed->roundingMask.size() != request.outer) {
-				_streamed->roundingMask = Images::EllipseMask(size);
+				_streamed->roundingMask = Ui::CircleOrSquareMask(size);
 			}
 			request.mask = _streamed->roundingMask;
 		}

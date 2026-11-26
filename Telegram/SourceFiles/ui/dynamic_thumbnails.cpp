@@ -443,7 +443,8 @@ QImage MediaThumbnail::image(int size) {
 				Qt::SmoothTransformation);
 		}
 		if (_forceRound) {
-			_prepared = Images::Circle(std::move(_prepared));
+			// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+			_prepared = Ui::CircleOrSquare(std::move(_prepared));
 		}
 		_prepared.setDevicePixelRatio(ratio);
 	}
@@ -578,7 +579,7 @@ QImage CallThumbnail::image(int size) {
 		_prepared.fill(Qt::black);
 		_prepared.setDevicePixelRatio(ratio);
 
-		_prepared = Images::Circle(std::move(_prepared));
+		_prepared = Ui::CircleOrSquare(std::move(_prepared));
 	}
 	return _prepared;
 }

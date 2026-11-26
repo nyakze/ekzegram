@@ -7,8 +7,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "dialogs/dialogs_row.h"
 
-#include "core/application.h"
-#include "core/core_settings.h"
 #include "ui/chat/chat_theme.h" // CountAverageColor.
 #include "ui/color_contrast.h"
 #include "ui/effects/credits_graphics.h"
@@ -22,6 +20,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/text/text_options.h"
 #include "ui/text/text_utilities.h"
 #include "ui/painter.h"
+#include "ui/userpic_view.h"
 #include "dialogs/dialogs_entry.h"
 #include "dialogs/ui/dialogs_video_userpic.h"
 #include "dialogs/ui/dialogs_layout.h"
@@ -194,9 +193,7 @@ constexpr auto kBlurRadius = 24;
 		QRect(
 			QPoint(partSkip, partSkip) * ratio,
 			QSize(partSize, partSize) * ratio));
-	auto result = Core::App().settings().fork().squareUserpics()
-		? std::move(image)
-		: Images::Circle(std::move(image));
+	auto result = Ui::CircleOrSquare(std::move(image));
 	result.setDevicePixelRatio(ratio);
 
 	auto q = QPainter(&result);
@@ -239,9 +236,7 @@ constexpr auto kBlurRadius = 24;
 				fullSize - partSize.width(),
 				fullSize - partSize.height()) * ratio,
 			partSize * ratio));
-	auto result = Core::App().settings().fork().squareUserpics()
-		? std::move(image)
-		: Images::Circle(std::move(image));
+	auto result = Ui::CircleOrSquare(std::move(image));
 	result.setDevicePixelRatio(ratio);
 
 	auto q = QPainter(&result);

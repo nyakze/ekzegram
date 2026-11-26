@@ -50,6 +50,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/cached_round_corners.h"
 #include "ui/power_saving.h"
 #include "ui/ui_utility.h"
+#include "ui/userpic_view.h"
 #include "ui/effects/path_shift_gradient.h"
 #include "ui/effects/spoiler_mess.h"
 #include "data/data_photo.h"
@@ -557,7 +558,8 @@ QSize Gif::videoSize() const {
 void Gif::validateRoundingMask(QSize size) const {
 	if (_roundingMask.size() != size) {
 		const auto ratio = style::DevicePixelRatio();
-		_roundingMask = Images::EllipseMask(size / ratio);
+		// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+		_roundingMask = Ui::CircleOrSquareMask(size / ratio);
 	}
 }
 
@@ -806,7 +808,7 @@ void Gif::draw(Painter &p, const PaintContext &context) const {
 				auto q = QPainter(&frame);
 				fillImageSpoiler(q, _spoiler.get(), rthumb, context);
 			}
-			p.drawImage(rthumb.topLeft(), Images::Circle(std::move(frame)));
+			p.drawImage(rthumb.topLeft(), Ui::CircleOrSquare(std::move(frame)));
 		}
 		p.setOpacity(1.);
 	}
@@ -1250,7 +1252,7 @@ void Gif::validateThumbCache(
 	}
 	auto cache = prepareThumbCache(scaled);
 	_thumbCache = isEllipse
-		? Images::Circle(std::move(cache))
+		? Ui::CircleOrSquare(std::move(cache))
 		: Images::Round(std::move(cache), MediaRoundingMask(rounding));
 	_thumbCacheRounding = rounding;
 	_thumbCacheBlurred = blurred;

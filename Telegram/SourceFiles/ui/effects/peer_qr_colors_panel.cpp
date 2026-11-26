@@ -12,6 +12,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/elastic_scroll.h"
 #include "ui/color_contrast.h"
 #include "ui/painter.h"
+#include "ui/userpic_view.h"
 #include "styles/style_boxes.h"
 
 namespace Ui {
@@ -108,7 +109,8 @@ struct Circle {
 		});
 		p.fillRect(QRect(0, 0, size, size), gradient);
 	}
-	return Images::Circle(std::move(result));
+	// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+	return Ui::CircleOrSquare(std::move(result));
 }
 
 [[nodiscard]] bool NeedsHairline(const QImage &image, float64 radius) {

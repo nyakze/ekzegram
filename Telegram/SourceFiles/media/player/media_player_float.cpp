@@ -25,6 +25,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_account.h"
 #include "ui/painter.h"
 #include "ui/ui_utility.h"
+#include "ui/userpic_view.h"
 #include "styles/style_media_player.h"
 #include "styles/style_chat.h"
 
@@ -55,7 +56,8 @@ bool RoundPainter::fillFrame(const QSize &size) {
 		auto request = Streaming::FrameRequest::NonStrict();
 		request.outer = request.resize = _frame.size();
 		if (_roundingMask.size() != request.outer) {
-			_roundingMask = Images::EllipseMask(frameInner().size());
+			// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+			_roundingMask = Ui::CircleOrSquareMask(frameInner().size());
 		}
 		request.mask = _roundingMask;
 		auto frame = streamed->frame(request);

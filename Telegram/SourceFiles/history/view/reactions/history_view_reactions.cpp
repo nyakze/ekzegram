@@ -12,9 +12,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/view/history_view_message.h"
 #include "history/view/history_view_cursor_state.h"
 #include "history/view/history_view_group_call_bar.h"
-#include "core/application.h"
 #include "core/click_handler_types.h"
-#include "core/core_settings.h"
 #include "data/stickers/data_custom_emoji.h"
 #include "data/data_channel.h"
 #include "data/data_chat.h"
@@ -31,6 +29,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/painter.h"
 #include "ui/rect.h"
 #include "ui/power_saving.h"
+#include "ui/userpic_view.h"
 #include "styles/style_chat.h"
 #include "styles/style_chat_helpers.h"
 
@@ -708,9 +707,7 @@ void InlineList::paintSingleBg(
 		float64 opacity) const {
 	p.setOpacity(opacity);
 	if (!areTags()) {
-		const auto radius = Core::App().settings().fork().squareUserpics()
-			? 0.
-			: (fill.height() / 2.);
+		const auto radius = Ui::SquareUserpics() ? 0. : (fill.height() / 2.);
 		p.setBrush(color);
 		p.drawRoundedRect(fill, radius, radius);
 		return;
@@ -802,9 +799,7 @@ void InlineList::clickHandlerPressedChanged(
 				}
 				return Ui::RippleAnimation::RoundRectMask(
 					geometry.size(),
-					Core::App().settings().fork().squareUserpics()
-						? 0
-						: (geometry.height() / 2));
+					Ui::SquareUserpics() ? 0 : (geometry.height() / 2));
 			}();
 			_ripple = std::make_unique<RippleEffect>(
 				st::defaultRippleAnimation,

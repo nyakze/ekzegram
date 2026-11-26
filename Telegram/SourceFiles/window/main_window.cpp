@@ -46,6 +46,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/screen_reader_mode.h"
 #include "ui/ui_utility.h"
 #include "ui/unread_counter_format.h"
+#include "ui/userpic_view.h"
 #include "apiwrap.h"
 #include "mainwidget.h" // session->content()->windowShown().
 #include "tray.h"
@@ -98,9 +99,7 @@ using Core::WindowPosition;
 // FORK (ekzegram): square tray icon for the square avatars setting.
 [[nodiscard]] const QImage &SquareLogoOr(const QImage &logo) {
 	static const auto square = QImage(u":/gui/art/logo_256_square.png"_q);
-	if (square.isNull()
-		|| !Core::IsAppLaunched()
-		|| !Core::App().settings().fork().squareUserpics()) {
+	if (square.isNull() || !Ui::SquareUserpics()) {
 		return logo;
 	}
 	return square;

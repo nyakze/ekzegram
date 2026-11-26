@@ -12,6 +12,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/image/image_prepare.h"
 #include "ui/painter.h"
 #include "ui/rect.h"
+#include "ui/userpic_view.h"
 #include "ui/widgets/popup_menu.h"
 #include "styles/style_editor.h"
 
@@ -55,7 +56,8 @@ void AudioDiscButton::setTrack(std::shared_ptr<AudioTrack> track) {
 			(scaled.height() - side) / 2,
 			side,
 			side);
-		_cover = Images::Circle(scaled.copy(crop));
+		// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+		_cover = Ui::CircleOrSquare(scaled.copy(crop));
 		_cover.setDevicePixelRatio(ratio);
 	}
 	update();
@@ -144,7 +146,7 @@ void AudioDiscButton::onStateChanged(State was, StateChangeSource source) {
 }
 
 QImage AudioDiscButton::prepareRippleMask() const {
-	return Images::EllipseMask(size());
+	return Ui::CircleOrSquareMask(size());
 }
 
 QPoint AudioDiscButton::prepareRippleStartPosition() const {

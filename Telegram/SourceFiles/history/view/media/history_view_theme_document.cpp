@@ -36,6 +36,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_session.h"
 #include "ui/text/format_values.h"
 #include "ui/text/text_utilities.h"
+#include "ui/userpic_view.h"
 #include "ui/boxes/confirm_box.h"
 #include "ui/chat/chat_style.h"
 #include "ui/chat/chat_theme.h"
@@ -411,7 +412,8 @@ QImage ThemeDocument::finishServiceThumbnail(QImage image) const {
 		constexpr auto kRadius = 16;
 		image = Images::BlurLargeImage(std::move(image), kRadius);
 	}
-	return Images::Circle(std::move(image));
+	// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+	return Ui::CircleOrSquare(std::move(image));
 }
 
 void ThemeDocument::generateThumbnail() const {

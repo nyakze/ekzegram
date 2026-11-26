@@ -24,7 +24,8 @@ namespace UserpicBuilder {
 	}
 	const auto processModifier = [&](QImage &&i) {
 		if (circle) {
-			return Images::Circle(std::move(i));
+			// FORK (ekzegram): square avatars setting, adapted from Forkgram.
+			return Ui::CircleOrSquare(std::move(i));
 		} else if (roundForumRect) {
 			const auto radius = std::min(i.height(), i.width())
 				* Ui::ForumUserpicRadiusMultiplier();

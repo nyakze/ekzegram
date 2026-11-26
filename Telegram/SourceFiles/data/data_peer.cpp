@@ -37,7 +37,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "mtproto/mtproto_config.h"
 #include "core/application.h"
 #include "core/click_handler_types.h"
-#include "core/core_settings.h"
 #include "window/notifications_manager.h"
 #include "window/window_session_controller.h"
 #include "window/main_window.h" // Window::LogoNoMargin.
@@ -47,6 +46,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/text/text_options.h"
 #include "ui/painter.h"
 #include "ui/unread_badge.h"
+#include "ui/userpic_view.h"
 #include "ui/ui_utility.h"
 #include "history/history.h"
 #include "history/view/history_view_element.h"
@@ -518,10 +518,8 @@ QImage PeerData::GenerateUserpicImage(
 			return round(*radius);
 		} else if (peer->isForum()) {
 			return round(size * Ui::ForumUserpicRadiusMultiplier());
-		} else if (Core::App().settings().fork().squareUserpics()) {
-			return image;
 		} else {
-			return Images::Circle(std::move(image));
+			return Ui::CircleOrSquare(std::move(image));
 		}
 	}
 	auto result = QImage(

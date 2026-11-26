@@ -7,8 +7,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "data/data_folder.h"
 
-#include "core/application.h"
-#include "core/core_settings.h"
 #include "data/data_session.h"
 #include "data/data_channel.h"
 #include "data/data_histories.h"
@@ -20,6 +18,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/painter.h"
 #include "ui/text/text_options.h"
 #include "ui/text/text_utilities.h"
+#include "ui/userpic_view.h"
 #include "lang/lang_keys.h"
 #include "storage/storage_facade.h"
 #include "main/main_account.h"
@@ -276,7 +275,7 @@ void Folder::paintUserpic(
 	p.setBrush(overrideBg ? *overrideBg : st::historyPeerArchiveUserpicBg);
 	{
 		PainterHighQualityEnabler hq(p);
-		if (Core::App().settings().fork().squareUserpics()) {
+		if (Ui::SquareUserpics()) {
 			p.drawRect(x, y, size, size);
 		} else {
 			p.drawEllipse(x, y, size, size);
