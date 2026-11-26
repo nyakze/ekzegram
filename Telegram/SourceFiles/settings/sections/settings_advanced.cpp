@@ -1136,15 +1136,28 @@ void BuildForkUpdateSection(SectionBuilder &builder) {
 	const auto autoCheck = builder.addButton({
 		.id = u"advanced/check_for_updates"_q,
 		.title = tr::lng_settings_update_automatically(),
-		.st = &st::settingsButtonNoIcon,
-		.label = rpl::single(tr::lng_settings_current_version(
-			tr::now,
-			lt_version,
-			currentVersionText())),
+		.st = &st::settingsUpdateToggle,
 		.toggled = rpl::single(settings->checkForUpdates()),
 		.keywords = { u"update"_q, u"check"_q, u"release"_q },
 	});
 	if (autoCheck) {
+		const auto version = tr::lng_settings_current_version(
+			tr::now,
+			lt_version,
+			currentVersionText());
+		const auto label = Ui::CreateChild<Ui::FlatLabel>(
+			autoCheck,
+			rpl::single(version),
+			st::settingsUpdateState);
+		rpl::combine(
+			autoCheck->widthValue(),
+			label->widthValue()
+		) | rpl::on_next([=] {
+			label->moveToLeft(
+				st::settingsUpdateStatePosition.x(),
+				st::settingsUpdateStatePosition.y());
+		}, label->lifetime());
+		label->setAttribute(Qt::WA_TransparentForMouseEvents);
 		autoCheck->toggledValue(
 		) | rpl::filter([=](bool value) {
 			return (value != settings->checkForUpdates());
@@ -1428,8 +1441,6 @@ const auto kMeta = BuildHelper({
 }, [](SectionBuilder &builder) {
 	const auto autoUpdate = cAutoUpdate();
 
-	// FORK (ekzegram): GitHub release checks replace the official updater.
-	BuildForkUpdateSection(builder);
 	if (!autoUpdate) {
 		BuildUpdateSection(builder, true);
 	}
@@ -1446,6 +1457,8 @@ const auto kMeta = BuildHelper({
 	if (autoUpdate) {
 		BuildUpdateSection(builder, false);
 	}
+	// FORK (ekzegram): GitHub release checks replace the official updater.
+	BuildForkUpdateSection(builder);
 	BuildExportSection(builder);
 });
 
