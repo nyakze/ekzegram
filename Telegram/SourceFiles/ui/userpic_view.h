@@ -57,6 +57,10 @@ struct PeerUserpicView {
 
 [[nodiscard]] bool PeerUserpicLoading(const PeerUserpicView &view);
 
+// FORK (ekzegram): square userpics flag, set once at startup.
+void SetSquareUserpics(bool value);
+[[nodiscard]] bool SquareUserpics();
+
 void ValidateUserpicCache(
 	PeerUserpicView &view,
 	const QImage *cloud,

@@ -7,14 +7,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/effects/outline_segments.h"
 
-#include "base/bytes.h"
-#include "base/const_string.h"
-#include "mtproto/core_types.h"
-#include "data/data_msg_id.h"
-#include "data/data_types.h"
-#include <crl/crl_object_on_queue.h>
-#include "core/application.h"
-#include "core/core_settings.h"
 
 #include <QtCore/QtMath> // M_PI
 #include <algorithm>
@@ -65,7 +57,7 @@ void PaintOutlineSegments(
 	const auto count = std::min(int(segments.size()), kOutlineSegmentsMax);
 	if (count == 1) {
 		p.setPen(QPen(segments.front().brush, segments.front().width));
-		if (Core::App().settings().fork().squareUserpics()) {
+		if (::Ui::SquareUserpics()) {
 			p.drawRect(ellipse);
 		} else {
 			p.drawEllipse(ellipse);
@@ -115,7 +107,7 @@ void PaintOutlineSegments(
 			added += (separator + length) * (1. - fromFullProgress);
 		}
 		const auto span = int(base::SafeRound(till + added)) - from;
-		if (Core::App().settings().fork().squareUserpics()) {
+		if (::Ui::SquareUserpics()) {
 			DrawSquareArc(p, ellipse, from, span);
 		} else {
 			p.drawArc(ellipse, from, span);

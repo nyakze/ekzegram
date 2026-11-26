@@ -7,14 +7,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/effects/round_checkbox.h"
 
-#include "base/bytes.h"
-#include "base/const_string.h"
-#include "mtproto/core_types.h"
-#include "data/data_msg_id.h"
-#include "data/data_types.h"
-#include <crl/crl_object_on_queue.h>
-#include "core/application.h"
-#include "core/core_settings.h"
 #include "lang/lang_keys.h"
 #include "ui/rp_widget.h"
 #include "ui/ui_utility.h"
@@ -468,7 +460,7 @@ void RoundImageCheckbox::paintFrame(
 				segments ? _segments.front().width : _st.selectWidth);
 			p.setPen(pen);
 			if (!radius) {
-				if (Core::App().settings().fork().squareUserpics()) {
+				if (::Ui::SquareUserpics()) {
 					p.drawRect(outline);
 				} else {
 					p.drawEllipse(outline);

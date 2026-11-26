@@ -34,6 +34,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/version.h"
 #include "ui/toast/toast.h"
 #include "ui/text/text_entity.h"
+#include "ui/userpic_view.h"
 #include "chat_helpers/emoji_keywords.h"
 #include "chat_helpers/stickers_emoji_image_loader.h"
 #include "base/platform/base_platform_global_shortcuts.h"
@@ -316,6 +317,8 @@ Application::~Application() {
 }
 
 void Application::run() {
+	// FORK (ekzegram): userpics shape is read once, before any painting.
+	Ui::SetSquareUserpics(settings().fork().squareUserpics());
 	// Depends on OpenSSL on macOS, so on ThirdParty::start().
 	// Depends on notifications settings.
 	_notifications = std::make_unique<Window::Notifications::System>();

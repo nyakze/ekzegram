@@ -7,14 +7,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/userpic_view.h"
 
-#include "base/bytes.h"
-#include "base/const_string.h"
-#include "mtproto/core_types.h"
-#include "data/data_msg_id.h"
-#include "data/data_types.h"
-#include <crl/crl_object_on_queue.h>
-#include "core/application.h"
-#include "core/core_settings.h"
 #include "ui/empty_userpic.h"
 #include "ui/painter.h"
 #include "ui/image/image_prepare.h"
@@ -23,6 +15,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 namespace Ui {
 namespace {
+
+bool gSquareUserpics = false;
 
 constexpr auto kPeek = 0.3; // Tunable. Strip width to the left of the userpic.
 constexpr auto kCover = 0.5; // Tunable. How far the image reaches into the userpic.
@@ -176,7 +170,7 @@ void ValidateUserpicCache(
 				Images::CornersMask(size
 					* Ui::ForumUserpicRadiusMultiplier()
 					/ style::DevicePixelRatio()));
-		} else if (!Core::App().settings().fork().squareUserpics()) {
+		} else if (!::Ui::SquareUserpics()) {
 			view.cached = Images::Circle(std::move(view.cached));
 		}
 	} else {
@@ -200,6 +194,14 @@ void ValidateUserpicCache(
 			empty->paintCircle(p, 0, 0, size, size);
 		}
 	}
+}
+
+void SetSquareUserpics(bool value) {
+	gSquareUserpics = value;
+}
+
+bool SquareUserpics() {
+	return gSquareUserpics;
 }
 
 } // namespace Ui

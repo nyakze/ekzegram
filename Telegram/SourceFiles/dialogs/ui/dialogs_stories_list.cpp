@@ -7,17 +7,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "dialogs/ui/dialogs_stories_list.h"
 
-#include "base/bytes.h"
-#include "base/const_string.h"
 #include "base/event_filter.h"
 #include "base/flat_set.h"
 #include "base/qt_signal_producer.h"
-#include "data/data_msg_id.h"
-#include "data/data_types.h"
-#include <crl/crl_object_on_queue.h>
-#include "mtproto/core_types.h"
-#include "core/application.h"
-#include "core/core_settings.h"
 #include "lang/lang_keys.h"
 #include "ui/effects/round_checkbox.h"
 #include "ui/effects/outline_segments.h"
@@ -746,7 +738,7 @@ void List::paint(
 					p.setPen(QPen(gradient, line));
 				}
 				p.setBrush(Qt::NoBrush);
-				if (Core::App().settings().fork().squareUserpics()) {
+				if (::Ui::SquareUserpics()) {
 					p.drawRect(outer);
 				} else {
 					p.drawEllipse(outer);
@@ -795,7 +787,7 @@ void List::paint(
 			p.setCompositionMode(QPainter::CompositionMode_Source);
 			p.setPen(Qt::NoPen);
 			p.setBrush(st::transparent);
-			if (Core::App().settings().fork().squareUserpics()) {
+			if (::Ui::SquareUserpics()) {
 				p.drawRect(rect);
 			} else {
 				p.drawEllipse(rect);

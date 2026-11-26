@@ -7,14 +7,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/empty_userpic.h"
 
-#include "base/bytes.h"
-#include "base/const_string.h"
-#include "mtproto/core_types.h"
-#include "data/data_msg_id.h"
-#include "data/data_types.h"
-#include <crl/crl_object_on_queue.h>
-#include "core/application.h"
-#include "core/core_settings.h"
 #include "info/channel_statistics/earn/earn_icons.h"
 #include "ui/chat/chat_style.h"
 #include "ui/effects/animation_value.h"
@@ -349,7 +341,7 @@ void EmptyUserpic::paintCircle(
 		int size) const {
 	paint(p, x, y, outerWidth, size, [&] {
 		// FORK (ekzegram): square avatars setting, adapted from Forkgram.
-		if (Core::App().settings().fork().squareUserpics()) {
+		if (::Ui::SquareUserpics()) {
 			p.drawRect(x, y, size, size);
 		} else {
 			p.drawEllipse(x, y, size, size);
@@ -419,7 +411,7 @@ void EmptyUserpic::PaintSavedMessages(
 	PainterHighQualityEnabler hq(p);
 	p.setBrush(std::move(bg));
 	p.setPen(Qt::NoPen);
-	if (Core::App().settings().fork().squareUserpics()) {
+	if (::Ui::SquareUserpics()) {
 		p.drawRect(x, y, size, size);
 	} else {
 		p.drawEllipse(x, y, size, size);
@@ -462,7 +454,7 @@ void EmptyUserpic::PaintRepliesMessages(
 	PainterHighQualityEnabler hq(p);
 	p.setBrush(bg);
 	p.setPen(Qt::NoPen);
-	if (Core::App().settings().fork().squareUserpics()) {
+	if (::Ui::SquareUserpics()) {
 		p.drawRect(x, y, size, size);
 	} else {
 		p.drawEllipse(x, y, size, size);
@@ -505,7 +497,7 @@ void EmptyUserpic::PaintHiddenAuthor(
 	PainterHighQualityEnabler hq(p);
 	p.setBrush(bg);
 	p.setPen(Qt::NoPen);
-	if (Core::App().settings().fork().squareUserpics()) {
+	if (::Ui::SquareUserpics()) {
 		p.drawRect(x, y, size, size);
 	} else {
 		p.drawEllipse(x, y, size, size);
@@ -542,7 +534,7 @@ void EmptyUserpic::PaintMyNotes(
 	PainterHighQualityEnabler hq(p);
 	p.setBrush(bg);
 	p.setPen(Qt::NoPen);
-	if (Core::App().settings().fork().squareUserpics()) {
+	if (::Ui::SquareUserpics()) {
 		p.drawRect(x, y, size, size);
 	} else {
 		p.drawEllipse(x, y, size, size);
@@ -579,7 +571,7 @@ void EmptyUserpic::PaintCurrency(
 	PainterHighQualityEnabler hq(p);
 	p.setBrush(bg);
 	p.setPen(Qt::NoPen);
-	if (Core::App().settings().fork().squareUserpics()) {
+	if (::Ui::SquareUserpics()) {
 		p.drawRect(x, y, size, size);
 	} else {
 		p.drawEllipse(x, y, size, size);
@@ -677,7 +669,7 @@ void EmptyUserpic::fillString(const QString &name) {
 EmptyUserpic::~EmptyUserpic() = default;
 
 void PaintMonoforumShape(QPainter &p, QRect rect) {
-	if (Core::App().settings().fork().squareUserpics()) {
+	if (::Ui::SquareUserpics()) {
 		p.drawRect(rect);
 	} else {
 		p.drawEllipse(rect);
