@@ -23,6 +23,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_account.h" // Account::sessionValue.
 #include "main/main_domain.h"
 #include "core/application.h"
+#include "core/fork_update_checker.h"
 #include "core/core_settings.h"
 #include "core/sandbox.h"
 #include "core/shortcuts.h"
@@ -41,6 +42,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/shadow.h"
 #include "ui/controls/title_sub_widget.h"
 #include "ui/controls/window_outdated_bar.h"
+#include "ui/controls/window_update_bar.h"
 #include "ui/controls/window_screen_reader_bar.h"
 #include "ui/painter.h"
 #include "ui/screen_reader_mode.h"
@@ -60,6 +62,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <QtCore/QMimeData>
 #include <QtGui/QWindow>
 #include <QtGui/QScreen>
+#include <QtGui/QDesktopServices>
 #include <QtGui/QDrag>
 
 #include <kurlmimedata.h>
@@ -486,6 +489,32 @@ MainWindow::MainWindow(not_null<Controller*> controller)
 		}, _outdated->lifetime());
 	}
 
+	// FORK (ekzegram): a persistent notice when an update is available.
+	Core::ForkUpdate::found(
+	) | rpl::on_next([=](const Core::ForkUpdate::Info &info) {
+		if (_updateBar) {
+			return;
+		}
+		_updateBar = Ui::CreateUpdateBar(
+			body(),
+			info.tag,
+			[=] { QDesktopServices::openUrl(QUrl(info.url)); },
+			[=] {
+				crl::on_main(this, [=] {
+					_updateBar.destroy();
+					updateControlsGeometry();
+				});
+			});
+		_updateBar->heightValue(
+		) | rpl::on_next([=](int height) {
+			if (!height) {
+				crl::on_main(this, [=] { _updateBar.destroy(); });
+			}
+			updateControlsGeometry();
+		}, _updateBar->lifetime());
+		updateControlsGeometry();
+	}, lifetime());
+
 	if (_screenReaderBar) {
 		_screenReaderBar->heightValue(
 		) | rpl::on_next([=](int height) {
@@ -715,6 +744,13 @@ int MainWindow::computeMinHeight() const {
 		_outdated->resizeToWidth(st::windowMinWidth);
 		return _outdated->height();
 	}();
+	const auto updateBar = [&] {
+		if (!_updateBar) {
+			return 0;
+		}
+		_updateBar->resizeToWidth(st::windowMinWidth);
+		return _updateBar->height();
+	}();
 	const auto screenReader = [&] {
 		if (!_screenReaderBar) {
 			return 0;
@@ -722,7 +758,7 @@ int MainWindow::computeMinHeight() const {
 		_screenReaderBar->resizeToWidth(st::windowMinWidth);
 		return _screenReaderBar->height();
 	}();
-	return outdated + screenReader + st::windowMinHeight;
+	return outdated + screenReader + updateBar + st::windowMinHeight;
 }
 
 void MainWindow::refreshTitleWidget() {
@@ -965,11 +1001,18 @@ void MainWindow::updateControlsGeometry() {
 		_screenReaderBar->moveToLeft(inner.x(), bodyTop);
 		bodyTop += _screenReaderBar->height();
 	}
+	auto bodyHeight = inner.height() - (bodyTop - inner.y());
+	if (_updateBar) {
+		Ui::SendPendingMoveResizeEvents(_updateBar.data());
+		_updateBar->resizeToWidth(inner.width());
+		bodyHeight -= _updateBar->height();
+		_updateBar->moveToLeft(inner.x(), bodyTop + bodyHeight);
+	}
 	if (_rightColumn) {
 		bodyWidth -= _rightColumn->width();
-		_rightColumn->setGeometry(bodyWidth, bodyTop, inner.width() - bodyWidth, inner.height() - (bodyTop - inner.y()));
+		_rightColumn->setGeometry(bodyWidth, bodyTop, inner.width() - bodyWidth, bodyHeight);
 	}
-	_body->setGeometry(bodyLeft, bodyTop, bodyWidth, inner.height() - (bodyTop - inner.y()));
+	_body->setGeometry(bodyLeft, bodyTop, bodyWidth, bodyHeight);
 }
 
 void MainWindow::updateTitle() {

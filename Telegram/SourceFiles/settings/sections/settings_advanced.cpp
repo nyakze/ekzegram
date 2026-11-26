@@ -1193,6 +1193,17 @@ void BuildForkUpdateSection(SectionBuilder &builder) {
 		},
 		.keywords = { u"check"_q, u"update"_q, u"now"_q },
 	});
+	builder.addDividerText(rpl::merge(
+		Core::ForkUpdate::found(
+		) | rpl::map([](const Core::ForkUpdate::Info &info) {
+			return tr::lng_update_available(tr::now, lt_tag, info.tag);
+		}),
+		Core::ForkUpdate::checkedNoUpdate(
+		) | rpl::map([](bool ok) {
+			return ok
+				? tr::lng_update_up_to_date(tr::now)
+				: tr::lng_update_check_failed(tr::now);
+		})));
 }
 
 void BuildUpdateSection(SectionBuilder &builder, bool atTop) {

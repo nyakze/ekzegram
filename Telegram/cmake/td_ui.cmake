@@ -605,6 +605,8 @@ PRIVATE
     ui/controls/who_reacted_context_action.h
     ui/controls/window_outdated_bar.cpp
     ui/controls/window_outdated_bar_dummy.cpp
+    ui/controls/window_update_bar.cpp
+    ui/controls/window_update_bar.h
     ui/controls/window_outdated_bar.h
     ui/controls/window_screen_reader_bar.cpp
     ui/controls/window_screen_reader_bar.h

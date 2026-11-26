@@ -17,6 +17,7 @@ namespace ForkUpdate {
 struct Info {
 	QString tag;
 	QString url;
+	bool manual = false;
 };
 
 // FORK (ekzegram): the check runs for portable installs only — installs

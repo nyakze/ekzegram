@@ -195,8 +195,7 @@ void Checker::perform(bool manual) {
 			}
 			Core::App().saveSettingsDelayed();
 			return;
-		}
-		const auto document = QJsonDocument::fromJson(data);
+		}		const auto document = QJsonDocument::fromJson(data);
 		const auto object = LatestListedRelease(document);
 		const auto tag = object.value(u"tag_name"_q).toString();
 		const auto parsed = ParseTag(tag);
@@ -206,6 +205,7 @@ void Checker::perform(bool manual) {
 				Found().fire({
 					.tag = tag,
 					.url = object.value(u"html_url"_q).toString(),
+					.manual = manual,
 				});
 			}
 		} else if (manual) {
