@@ -7,9 +7,14 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "dialogs/ui/dialogs_stories_list.h"
 
+#include "base/bytes.h"
+#include "base/const_string.h"
 #include "base/event_filter.h"
 #include "base/flat_set.h"
 #include "base/qt_signal_producer.h"
+#include "data/data_msg_id.h"
+#include "data/data_types.h"
+#include <crl/crl_object_on_queue.h>
 #include "core/application.h"
 #include "core/core_settings.h"
 #include "lang/lang_keys.h"
