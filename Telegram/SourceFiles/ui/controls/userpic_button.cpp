@@ -1278,10 +1278,6 @@ void UserpicButton::prepareUserpicPixmap() {
 						QSize(size, size) * ratio,
 						Qt::IgnoreAspectRatio,
 						Qt::SmoothTransformation);
-					auto image = full->original().scaled(
-						QSize(size, size) * ratio,
-						Qt::IgnoreAspectRatio,
-						Qt::SmoothTransformation);
 					if (useForumShape()) {
 						image = Images::Round(
 							std::move(image),
