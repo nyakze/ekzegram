@@ -503,9 +503,26 @@ Widget::Widget(
 		_forkUpdateUrl = info.url;
 		checkForkUpdate();
 	}, lifetime());
-	if (const auto info = Core::ForkUpdate::AvailableUpdate()) {
-		_forkUpdateUrl = info->url;
-		checkForkUpdate();
+	Core::App().settings().checkForUpdatesChanges(
+	) | rpl::on_next([=](bool enabled) {
+		if (enabled) {
+			if (const auto info = Core::ForkUpdate::AvailableUpdate()) {
+				_forkUpdateUrl = info->url;
+				checkForkUpdate();
+			}
+		} else {
+			_forkUpdateUrl.clear();
+			if (_updateTelegram) {
+				_updateTelegram.destroy();
+				updateControlsGeometry();
+			}
+		}
+	}, lifetime());
+	if (Core::App().settings().checkForUpdates()) {
+		if (const auto info = Core::ForkUpdate::AvailableUpdate()) {
+			_forkUpdateUrl = info->url;
+			checkForkUpdate();
+		}
 	}
 
 	_cancelSearch->setClickedCallback([=] {
@@ -2654,7 +2671,9 @@ void Widget::checkUpdateStatus() {
 void Widget::checkForkUpdate() {
 	if (_layout == Layout::Child) {
 		return;
-	} else if (_updateTelegram || _forkUpdateUrl.isEmpty()) {
+	} else if (_updateTelegram
+		|| _forkUpdateUrl.isEmpty()
+		|| !Core::App().settings().checkForUpdates()) {
 		return;
 	}
 	_updateTelegram.create(
