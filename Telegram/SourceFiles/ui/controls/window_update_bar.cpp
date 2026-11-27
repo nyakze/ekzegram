@@ -53,7 +53,8 @@ UpdateBar::UpdateBar(
 , _close(this, st::windowOutdatedClose) {
 	_title->setTryMakeSimilarLines(true);
 	_details->setTryMakeSimilarLines(true);
-	_details->setCursor(Qt::PointingHandCursor);
+	_title->setAttribute(Qt::WA_TransparentForMouseEvents);
+	_details->setAttribute(Qt::WA_TransparentForMouseEvents);
 	_close->setClickedCallback(std::move(close));
 	setCursor(Qt::PointingHandCursor);
 }
