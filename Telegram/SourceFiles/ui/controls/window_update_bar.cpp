@@ -78,7 +78,7 @@ int UpdateBar::resizeGetHeight(int newWidth) {
 }
 
 void UpdateBar::paintEvent(QPaintEvent *e) {
-	QPainter(this).fillRect(e->rect(), st::outdatedBg);
+	QPainter(this).fillRect(e->rect(), st::activeButtonBg);
 }
 
 void UpdateBar::mouseReleaseEvent(QMouseEvent *e) {

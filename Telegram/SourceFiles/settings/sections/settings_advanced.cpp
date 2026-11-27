@@ -1180,6 +1180,7 @@ void BuildForkUpdateSection(SectionBuilder &builder) {
 			return (value != cInstallBetaVersion());
 		}) | rpl::on_next([=](bool value) {
 			cSetInstallBetaVersion(value);
+			Core::Launcher::Instance().writeInstallBetaVersionsSetting();
 			Core::App().saveSettingsDelayed();
 		}, beta->lifetime());
 	}
