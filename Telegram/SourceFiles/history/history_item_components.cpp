@@ -12,6 +12,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "base/qt/qt_key_modifiers.h"
 #include "base/algorithm.h"
 #include "base/options.h"
+#include "base/unixtime.h"
 #include "core/click_handler_types.h"
 #include "core/local_url_handlers.h"
 #include "core/ui_integration.h"
@@ -64,6 +65,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_dialogs.h" // dialogsMiniReplyStory.
 #include "styles/style_widgets.h"
 
+#include <QtCore/QLocale>
 #include <QtGui/QGuiApplication>
 
 namespace {
@@ -405,9 +407,20 @@ void HistoryMessageForwarded::create(
 				copy,
 				st::fwdTextUserpicPadding));
 	}
+	auto phraseText = phrase(via, std::move(userpic));
+	// FORK (ekzegram): show the original date in the forward title,
+	// adapted from Forkgram.
+	if (originalDate && !story && psaType.isEmpty()) {
+		phraseText.text += ". " + tr::lng_fork_forwarded_date_title(
+			tr::now,
+			lt_date,
+			QLocale().toString(
+				base::unixtime::parse(originalDate),
+				QLocale::ShortFormat));
+	}
 	text.setMarkedText(
 		st::fwdTextStyle,
-		phrase(via, std::move(userpic)),
+		std::move(phraseText),
 		kMarkupTextOptions,
 		context);
 

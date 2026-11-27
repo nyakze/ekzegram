@@ -9525,6 +9525,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_fork_link_replacements_reset" = "Reset";
 "lng_fork_link_replaced" = "Link replaced";
 "lng_fork_link_replaced_undo" = "Undo";
+"lng_fork_forwarded_date_title" = "Date: {date}";
 "lng_context_open_uri_link" = "Open Link with URI Scheme";
 "lng_settings_uri_scheme" = "Open links with custom URI Scheme";
 "lng_settings_uri_scheme_box_title" = "Custom URI Scheme";

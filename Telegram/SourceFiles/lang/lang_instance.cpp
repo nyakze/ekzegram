@@ -825,6 +825,7 @@ void Instance::applyForkOverrides() {
 		{ "lng_fork_link_replacements_reset", "Сбросить" },
 		{ "lng_fork_link_replaced", "Ссылка заменена" },
 		{ "lng_fork_link_replaced_undo", "Отменить" },
+		{ "lng_fork_forwarded_date_title", "Дата: {date}" },
 		{ "lng_context_open_uri_link", "Открыть ссылку через URI-схему" },
 		{ "lng_settings_uri_scheme", "Открывать ссылки через свою URI-схему" },
 		{ "lng_settings_uri_scheme_box_title", "Своя URI-схема" },
