@@ -1140,6 +1140,7 @@ void BuildForkUpdateSection(SectionBuilder &builder) {
 		.toggled = rpl::single(settings->checkForUpdates()),
 		.keywords = { u"update"_q, u"check"_q, u"release"_q },
 	});
+	auto shown = rpl::single(false);
 	if (autoCheck) {
 		const auto version = tr::lng_settings_current_version(
 			tr::now,
@@ -1164,47 +1165,60 @@ void BuildForkUpdateSection(SectionBuilder &builder) {
 		}) | rpl::on_next([=](bool value) {
 			settings->setCheckForUpdates(value);
 			Core::App().saveSettingsDelayed();
+			if (value) {
+				Core::ForkUpdate::Recheck();
+			}
 		}, autoCheck->lifetime());
+		shown = autoCheck->toggledValue();
 	}
 
-	const auto beta = builder.addButton({
-		.id = u"advanced/install_beta"_q,
-		.title = tr::lng_settings_install_beta(),
-		.st = &st::settingsButtonNoIcon,
-		.toggled = rpl::single(cInstallBetaVersion()),
-		.keywords = { u"beta"_q, u"update"_q, u"version"_q },
-	});
-	if (beta) {
-		beta->toggledValue(
-		) | rpl::filter([=](bool value) {
-			return (value != cInstallBetaVersion());
-		}) | rpl::on_next([=](bool value) {
-			cSetInstallBetaVersion(value);
-			Core::Launcher::Instance().writeInstallBetaVersionsSetting();
-			Core::App().saveSettingsDelayed();
-		}, beta->lifetime());
-	}
+	builder.scope([&] {
+		const auto beta = builder.addButton({
+			.id = u"advanced/install_beta"_q,
+			.title = tr::lng_settings_install_beta(),
+			.st = &st::settingsButtonNoIcon,
+			.toggled = rpl::single(cInstallBetaVersion()),
+			.keywords = { u"beta"_q, u"update"_q, u"version"_q },
+		});
+		if (beta) {
+			beta->toggledValue(
+			) | rpl::filter([=](bool value) {
+				return (value != cInstallBetaVersion());
+			}) | rpl::on_next([=](bool value) {
+				cSetInstallBetaVersion(value);
+				Core::Launcher::Instance().writeInstallBetaVersionsSetting();
+				Core::App().saveSettingsDelayed();
+				Core::ForkUpdate::Recheck();
+			}, beta->lifetime());
+		}
 
-	builder.addButton({
-		.id = u"advanced/check_for_updates_now"_q,
-		.title = tr::lng_settings_check_now(),
-		.st = &st::settingsButtonNoIcon,
-		.onClick = [=] {
-			Core::ForkUpdate::CheckNow();
-		},
-		.keywords = { u"check"_q, u"update"_q, u"now"_q },
-	});
-	builder.addDividerText(rpl::merge(
-		Core::ForkUpdate::found(
-		) | rpl::map([](const Core::ForkUpdate::Info &info) {
-			return tr::lng_update_available(tr::now, lt_tag, info.tag);
-		}),
-		Core::ForkUpdate::checkedNoUpdate(
-		) | rpl::map([](bool ok) {
-			return ok
-				? tr::lng_update_up_to_date(tr::now)
-				: tr::lng_update_check_failed(tr::now);
-		})));
+		builder.addButton({
+			.id = u"advanced/check_for_updates_now"_q,
+			.title = tr::lng_settings_check_now(),
+			.st = &st::settingsButtonNoIcon,
+			.onClick = [=] {
+				Core::ForkUpdate::CheckNow();
+			},
+			.keywords = { u"check"_q, u"update"_q, u"now"_q },
+		});
+		builder.addDividerText(rpl::merge(
+			rpl::single([&] {
+				const auto info = Core::ForkUpdate::AvailableUpdate();
+				return info
+					? tr::lng_update_available(tr::now, lt_tag, info->tag)
+					: QString();
+			}()),
+			Core::ForkUpdate::found(
+			) | rpl::map([](const Core::ForkUpdate::Info &info) {
+				return tr::lng_update_available(tr::now, lt_tag, info.tag);
+			}),
+			Core::ForkUpdate::checkedNoUpdate(
+			) | rpl::map([](bool ok) {
+				return ok
+					? tr::lng_update_up_to_date(tr::now)
+					: tr::lng_update_check_failed(tr::now);
+			})));
+	}, std::move(shown));
 }
 
 void BuildUpdateSection(SectionBuilder &builder, bool atTop) {

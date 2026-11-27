@@ -134,9 +134,10 @@ class Checker final : public QObject {
 public:
 	Checker();
 	void checkNow();
+	void recheck();
 
 private:
-	void scheduleNext(int delayMs);
+	void scheduleNext(int delayMs, bool force = false);
 	void perform(bool manual);
 
 	QNetworkAccessManager _manager;
@@ -145,7 +146,7 @@ private:
 };
 
 Checker::Checker() {
-	scheduleNext(kFirstCheckDelay);
+	scheduleNext(kFirstCheckDelay, true);
 
 	Core::App().settings().checkForUpdatesChanges(
 	) | rpl::filter([=](bool enabled) {
@@ -155,7 +156,7 @@ Checker::Checker() {
 	}, _lifetime);
 }
 
-void Checker::scheduleNext(int delayMs) {
+void Checker::scheduleNext(int delayMs, bool force) {
 	QTimer::singleShot(delayMs, this, [=] {
 		const auto &settings = Core::App().settings();
 		if (!settings.checkForUpdates()) {
@@ -163,7 +164,7 @@ void Checker::scheduleNext(int delayMs) {
 			return;
 		}
 		const auto now = QDateTime::currentSecsSinceEpoch();
-		if (now - settings.updateCheckLastTime() < kMinIntervalSec) {
+		if (!force && now - settings.updateCheckLastTime() < kMinIntervalSec) {
 			scheduleNext(kRecheckInterval);
 			return;
 		}
@@ -173,6 +174,10 @@ void Checker::scheduleNext(int delayMs) {
 
 void Checker::checkNow() {
 	perform(true);
+}
+
+void Checker::recheck() {
+	perform(false);
 }
 
 void Checker::perform(bool manual) {
@@ -200,14 +205,12 @@ void Checker::perform(bool manual) {
 		const auto tag = object.value(u"tag_name"_q).toString();
 		const auto parsed = ParseTag(tag);
 		if (parsed && NewerThanCurrent(*parsed)) {
-			if (manual || settings.updateCheckSeenTag() != tag) {
-				settings.setUpdateCheckSeenTag(tag);
-				Found().fire({
-					.tag = tag,
-					.url = object.value(u"html_url"_q).toString(),
-					.manual = manual,
-				});
-			}
+			settings.setUpdateCheckSeenTag(tag);
+			Found().fire({
+				.tag = tag,
+				.url = object.value(u"html_url"_q).toString(),
+				.manual = manual,
+			});
 		} else if (manual) {
 			CheckedNoUpdate().fire(true);
 		}
@@ -241,6 +244,24 @@ void CheckNow() {
 		Instance() = std::make_unique<Checker>();
 	}
 	Instance()->checkNow();
+}
+
+void Recheck() {
+	if (Instance()) {
+		Instance()->recheck();
+	}
+}
+
+std::optional<Info> AvailableUpdate() {
+	const auto tag = Core::App().settings().updateCheckSeenTag();
+	const auto parsed = ParseTag(tag);
+	if (!parsed || !NewerThanCurrent(*parsed)) {
+		return std::nullopt;
+	}
+	return Info{
+		.tag = tag,
+		.url = u"https://github.com/nyakze/ekzegram/releases/tag/"_q + tag,
+	};
 }
 
 rpl::producer<Info> found() {

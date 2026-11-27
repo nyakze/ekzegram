@@ -503,6 +503,10 @@ Widget::Widget(
 		_forkUpdateUrl = info.url;
 		checkForkUpdate();
 	}, lifetime());
+	if (const auto info = Core::ForkUpdate::AvailableUpdate()) {
+		_forkUpdateUrl = info->url;
+		checkForkUpdate();
+	}
 
 	_cancelSearch->setClickedCallback([=] {
 		cancelSearch({ .jumpBackToSearchedChat = true });
