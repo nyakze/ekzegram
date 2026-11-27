@@ -68,6 +68,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/application.h"
 #include "core/click_handler_types.h"
 #include "core/update_checker.h"
+#include "core/fork_update_checker.h"
 #include "core/shortcuts.h"
 #include "window/window_columns.h"
 #include "window/window_controller.h"
@@ -107,6 +108,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_window.h"
 
 #include <QtCore/QMimeData>
+#include <QtGui/QDesktopServices>
 #include <QtGui/QTextBlock>
 #include <QtWidgets/QScrollBar>
 #include <QtWidgets/QTextEdit>
@@ -494,6 +496,13 @@ Widget::Widget(
 			checkUpdateStatus();
 		}, lifetime());
 	}
+
+	// FORK (ekzegram): the same bottom bar for ekzegram release updates.
+	Core::ForkUpdate::found(
+	) | rpl::on_next([=](const Core::ForkUpdate::Info &info) {
+		_forkUpdateUrl = info.url;
+		checkForkUpdate();
+	}, lifetime());
 
 	_cancelSearch->setClickedCallback([=] {
 		cancelSearch({ .jumpBackToSearchedChat = true });
@@ -2634,6 +2643,29 @@ void Widget::checkUpdateStatus() {
 			return;
 		}
 		_updateTelegram.destroy();
+	}
+	updateControlsGeometry();
+}
+
+void Widget::checkForkUpdate() {
+	if (_layout == Layout::Child) {
+		return;
+	} else if (_updateTelegram || _forkUpdateUrl.isEmpty()) {
+		return;
+	}
+	_updateTelegram.create(
+		this,
+		tr::lng_update_telegram(tr::now),
+		st::dialogsUpdateButton,
+		st::dialogsInstallUpdate,
+		st::dialogsInstallUpdateOver,
+		true);
+	_updateTelegram->show();
+	_updateTelegram->setClickedCallback([=] {
+		QDesktopServices::openUrl(QUrl(_forkUpdateUrl));
+	});
+	if (_connecting) {
+		_connecting->raise();
 	}
 	updateControlsGeometry();
 }

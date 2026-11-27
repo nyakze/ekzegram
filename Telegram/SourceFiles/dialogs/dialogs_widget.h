@@ -270,6 +270,7 @@ private:
 	void refreshTopBars();
 	void showSearchInTopBar(anim::type animated);
 	void checkUpdateStatus();
+	void checkForkUpdate();
 	void openBotMainApp(not_null<UserData*> bot);
 	void changeOpenedSubsection(
 		FnMut<void()> change,
@@ -391,6 +392,7 @@ private:
 	std::unique_ptr<Suggestions> _suggestions;
 	std::vector<std::unique_ptr<Suggestions>> _hidingSuggestions;
 	object_ptr<BottomButton> _updateTelegram = { nullptr };
+	QString _forkUpdateUrl;
 	object_ptr<BottomButton> _loadMoreChats = { nullptr };
 	std::unique_ptr<Ui::DownloadBar> _downloadBar;
 	std::unique_ptr<Window::ConnectionState> _connecting;

@@ -797,6 +797,7 @@ void Instance::applyForkOverrides() {
 		{ "lng_update_open_release", "Открыть страницу релиза" },
 		{ "lng_update_up_to_date", "У вас последняя версия." },
 		{ "lng_update_check_failed", "Не удалось проверить обновления. Попробуйте позже." },
+		{ "lng_update_telegram", "Обновить ekzegram" },
 		{ "lng_share_as_copy", "Как копию" },
 		{ "lng_share_as_copy_no_text", "Без текста" },
 		{ "lng_share_as_copy_silent_scheduled", "Запланировано без уведомления." },
