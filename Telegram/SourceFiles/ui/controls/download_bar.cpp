@@ -7,10 +7,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/controls/download_bar.h"
 
-#include "ui/widgets/buttons.h"
+#include "lang/lang_keys.h"
+#include "ui/image/image_prepare.h"
 #include "ui/text/format_values.h"
 #include "ui/text/text_utilities.h"
-#include "ui/image/image_prepare.h"
+#include "ui/widgets/buttons.h"
 #include "ui/painter.h"
 #include "ui/userpic_view.h"
 #include "lang/lang_keys.h"

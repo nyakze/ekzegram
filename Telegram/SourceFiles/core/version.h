@@ -25,12 +25,12 @@ constexpr auto AppId = "{4DAB0BDC-F97C-4158-9BF1-3C42796CDA4A}"_cs;
 constexpr auto AppNameOld = "Telegram Win (Unofficial)"_cs;
 constexpr auto AppName = "ekzegram"_cs;
 constexpr auto AppFile = "Telegram"_cs;
-constexpr auto AppVersion = 7004006;
+constexpr auto AppVersion = 7004007;
 // FORK (ekzegram): the ekzegram release number this source tree ships as.
 // Must match the suffix of the release tag "v<upstream>-ekzegram<N>"; the
 // Make release workflow verifies the tag against this value, and the fork
 // update checker compares it with newer releases on GitHub.
-constexpr auto ForkBuildNumber = 3;
-constexpr auto AppVersionStr = "7.4.6";
+constexpr auto ForkBuildNumber = 1;
+constexpr auto AppVersionStr = "7.4.7";
 constexpr auto AppBetaVersion = false;
 constexpr auto AppAlphaVersion = TDESKTOP_ALPHA_VERSION;
