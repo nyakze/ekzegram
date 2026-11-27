@@ -1140,7 +1140,7 @@ void BuildForkUpdateSection(SectionBuilder &builder) {
 		.toggled = rpl::single(settings->checkForUpdates()),
 		.keywords = { u"update"_q, u"check"_q, u"release"_q },
 	});
-	auto shown = rpl::single(false);
+	auto shown = rpl::producer<bool>(rpl::single(false));
 	if (autoCheck) {
 		const auto version = tr::lng_settings_current_version(
 			tr::now,
