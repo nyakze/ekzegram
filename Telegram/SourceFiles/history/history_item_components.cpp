@@ -15,6 +15,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "base/unixtime.h"
 #include "core/application.h"
 #include "core/click_handler_types.h"
+#include "core/core_settings.h"
 #include "core/fork_settings.h"
 #include "core/local_url_handlers.h"
 #include "core/ui_integration.h"
