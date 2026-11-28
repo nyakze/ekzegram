@@ -162,6 +162,46 @@ void BuildAppearanceSection(
 				Ui::LayerOption::KeepOther);
 		}, square->lifetime());
 	}
+
+	const auto fwdDate = builder.addButton({
+		.id = u"ekzegram/forwarded_date_title"_q,
+		.title = tr::lng_settings_forwarded_date(),
+		.st = &st::settingsButtonNoIcon,
+		.keywords = {
+			u"forward"_q,
+			u"forwarded"_q,
+			u"date"_q,
+			u"title"_q,
+		},
+	});
+	if (fwdDate) {
+		const auto state = fwdDate->lifetime().make_state<rpl::variable<bool>>(
+			Core::App().settings().fork().forwardedDateTitle());
+		fwdDate->toggleOn(state->value());
+		fwdDate->toggledChanges() | rpl::on_next([=](bool enabled) {
+			if (enabled == state->current()) {
+				return;
+			}
+			*state = enabled;
+			if (!controller) {
+				return;
+			}
+			controller->show(
+				Ui::MakeConfirmBox({
+					.text = tr::lng_settings_need_restart(),
+					.confirmed = [=] {
+						Core::App().settings().fork().setForwardedDateTitle(
+							enabled);
+						Core::App().saveSettingsDelayed();
+						Core::Restart();
+					},
+					.cancelled = [=] { *state = !enabled; },
+					.confirmText = tr::lng_settings_restart_now(),
+					.cancelText = tr::lng_settings_restart_later(),
+				}),
+				Ui::LayerOption::KeepOther);
+		}, fwdDate->lifetime());
+	}
 }
 
 void BuildBehaviorSection(SectionBuilder &builder) {

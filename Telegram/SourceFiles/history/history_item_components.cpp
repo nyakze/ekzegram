@@ -13,7 +13,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "base/algorithm.h"
 #include "base/options.h"
 #include "base/unixtime.h"
+#include "core/application.h"
 #include "core/click_handler_types.h"
+#include "core/fork_settings.h"
 #include "core/local_url_handlers.h"
 #include "core/ui_integration.h"
 #include "data/business/data_shortcut_messages.h"
@@ -409,8 +411,11 @@ void HistoryMessageForwarded::create(
 	}
 	auto phraseText = phrase(via, std::move(userpic));
 	// FORK (ekzegram): show the original date in the forward title,
-	// adapted from Forkgram.
-	if (originalDate && !story && psaType.isEmpty()) {
+	// adapted from Forkgram. Off by default, see the fork settings.
+	if (originalDate
+		&& !story
+		&& psaType.isEmpty()
+		&& Core::App().settings().fork().forwardedDateTitle()) {
 		phraseText.text += ". " + tr::lng_fork_forwarded_date_title(
 			tr::now,
 			lt_date,

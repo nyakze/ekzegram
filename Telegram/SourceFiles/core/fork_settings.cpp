@@ -53,6 +53,7 @@ void ForkSettings::reload() {
 		_owner->readPref<QByteArray>(kMarkdownClipboardText));
 	_emojiSearchLanguages = QString::fromUtf8(
 		_owner->readPref<QByteArray>(kEmojiSearchLanguages));
+	_forwardedDateTitle = _owner->readPref<bool>(kForwardedDateTitle, false);
 }
 
 void ForkSettings::resetOnLastLogout() {

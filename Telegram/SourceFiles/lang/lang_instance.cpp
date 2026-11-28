@@ -775,6 +775,7 @@ void Instance::applyForkOverrides() {
 		{ "lng_settings_widgets_title", "Виджеты" },
 		{ "lng_settings_appearance_title", "Оформление" },
 		{ "lng_settings_square_avatars", "Квадратные аватарки" },
+		{ "lng_settings_forwarded_date", "Дата пересланных сообщений в заголовке" },
 		{ "lng_settings_disable_widgets", "Отключить HTML-виджеты в ботах" },
 		{ "lng_settings_disable_widgets_about", "Виджеты в сообщениях ботов заменяются заглушкой. На мини-приложения не влияет." },
 		{ "lng_settings_auto_submit_passcode", "Автоматически подтверждать локальный пароль" },

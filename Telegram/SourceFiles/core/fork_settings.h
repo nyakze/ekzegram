@@ -198,6 +198,13 @@ public:
 		assign(_emojiSearchLanguages, value, kEmojiSearchLanguages);
 	}
 
+	[[nodiscard]] bool forwardedDateTitle() const {
+		return _forwardedDateTitle;
+	}
+	void setForwardedDateTitle(bool value) {
+		assign(_forwardedDateTitle, value, kForwardedDateTitle);
+	}
+
 	[[nodiscard]] rpl::producer<> changes() const;
 
 private:
@@ -225,8 +232,9 @@ private:
 	static constexpr auto kHideFromBlockedUsers = "fork.hideFromBlockedUsers";
 	static constexpr auto kMarkdownClipboardText = "fork.markdownClipboardText";
 	static constexpr auto kEmojiSearchLanguages = "fork.emojiSearchLanguages";
+	static constexpr auto kForwardedDateTitle = "fork.forwardedDateTitle";
 
-	static constexpr auto kAllKeys = std::array<std::string_view, 24>{
+	static constexpr auto kAllKeys = std::array<std::string_view, 25>{
 		kSquareUserpics,
 		kAudioFade,
 		kAutoSubmitPasscode,
@@ -251,6 +259,7 @@ private:
 		kHideFromBlockedUsers,
 		kMarkdownClipboardText,
 		kEmojiSearchLanguages,
+		kForwardedDateTitle,
 	};
 
 	void assign(bool &field, bool value, std::string_view key);
@@ -283,6 +292,7 @@ private:
 	bool _hideFromBlockedUsers = false;
 	QString _markdownClipboardText;
 	QString _emojiSearchLanguages;
+	bool _forwardedDateTitle = false;
 
 	rpl::event_stream<> _changes;
 
